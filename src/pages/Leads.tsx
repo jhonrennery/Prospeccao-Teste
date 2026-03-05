@@ -189,7 +189,18 @@ export default function Leads() {
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <h3 className="font-semibold text-foreground text-sm leading-tight">
+                      <h3
+                        className={`font-semibold text-sm leading-tight ${
+                          lead.place.google_maps_url
+                            ? "text-foreground hover:text-primary cursor-pointer transition-colors"
+                            : "text-foreground"
+                        }`}
+                        onClick={() => {
+                          if (lead.place.google_maps_url) {
+                            setMapsDialog({ name: lead.place.name, url: lead.place.google_maps_url });
+                          }
+                        }}
+                      >
                         {lead.place.name}
                       </h3>
                       {lead.place.category && (
