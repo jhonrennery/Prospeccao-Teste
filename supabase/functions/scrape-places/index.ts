@@ -76,7 +76,7 @@ Deno.serve(async (req) => {
     }
 
     // Also try to scrape Google Maps directly
-    const mapsQuery = `${segment} em ${location}`;
+    const mapsQuery = `${segment}${category_filter ? ' ' + category_filter : ''} em ${location}`;
     const mapsUrl = `https://www.google.com/maps/search/${encodeURIComponent(mapsQuery)}`;
     
     console.log('Scraping Google Maps URL:', mapsUrl);
