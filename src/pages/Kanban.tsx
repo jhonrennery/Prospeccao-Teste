@@ -4,6 +4,11 @@ import { DragDropContext, Droppable, Draggable, type DropResult } from "@hello-p
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel,
+  AlertDialogContent, AlertDialogDescription, AlertDialogFooter,
+  AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   Phone, Globe, MapPin, Star, Mail, GripVertical,
   Kanban as KanbanIcon, DollarSign, TrendingUp,
 } from "lucide-react";
