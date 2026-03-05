@@ -402,5 +402,28 @@ export default function KanbanPage() {
         </div>
       </DragDropContext>
     </div>
+
+      <AlertDialog open={!!mapsDialog} onOpenChange={(open) => !open && setMapsDialog(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Visitar no Google Meu Negócio?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Deseja abrir a página do Google Meu Negócio de <strong>{mapsDialog?.name}</strong> em uma nova aba?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (mapsDialog?.url) window.open(mapsDialog.url, "_blank", "noopener,noreferrer");
+                setMapsDialog(null);
+              }}
+            >
+              Abrir Google Meu Negócio
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }
