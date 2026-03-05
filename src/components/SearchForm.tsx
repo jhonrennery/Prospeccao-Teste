@@ -505,22 +505,25 @@ export function SearchForm({ onSearch, isLoading }: SearchFormProps) {
         {/* Submit */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0 pt-2">
           <div className="text-xs text-muted-foreground/70">
-            {params.segment && params.location ? (
+            {params.segment && (params.city || params.location) ? (
               <span>
                 Buscando <span className="text-foreground font-medium">{params.segment}</span> em{" "}
                 <span className="text-foreground font-medium">
-                  {params.location}{params.state && params.state !== "all" ? `, ${params.state}` : ""}
+                  {params.neighborhood && params.neighborhood !== "all" ? `${params.neighborhood}, ` : ""}
+                  {params.city && params.city !== "all" ? params.city : params.location}
+                  {params.state && params.state !== "all" ? `, ${params.state}` : ""}
                 </span>
+                {params.cep && <span> (CEP: {params.cep})</span>}
                 {params.radius_km > 0 && <span> ({params.radius_km}km)</span>}
               </span>
             ) : (
-              <span>Preencha segmento e cidade</span>
+              <span>Preencha segmento e localização</span>
             )}
           </div>
 
           <Button
             type="submit"
-            disabled={isLoading || !params.segment.trim() || !params.location.trim()}
+            disabled={isLoading || !params.segment.trim() || (!params.city && !params.location.trim() && !params.cep.trim())}
             className="min-w-[180px]"
           >
             {isLoading ? (
