@@ -13,7 +13,7 @@ export function AppSidebar() {
   const location = useLocation();
 
   return (
-    <aside className="fixed left-0 top-0 z-40 flex h-screen w-16 flex-col items-center border-r border-border bg-sidebar py-6 lg:w-56">
+    <aside className="fixed left-0 top-0 z-40 flex h-screen w-14 flex-col items-center border-r border-border bg-sidebar py-4 md:w-16 md:py-6 lg:w-56">
       <div className="mb-8 flex items-center gap-2 px-4">
         <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary">
           <Zap className="h-4 w-4 text-primary-foreground" />

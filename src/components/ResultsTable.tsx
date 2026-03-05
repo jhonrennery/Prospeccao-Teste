@@ -130,7 +130,7 @@ export function ResultsTable({ results, onAddToLeads, onEnrich, isEnriching }: R
                     {place.website && (
                       <div className="flex items-center gap-1 text-xs text-muted-foreground">
                         <Globe className="h-3 w-3" />
-                        <a href={place.website} target="_blank" rel="noopener noreferrer" className="hover:text-primary truncate max-w-[180px]">
+                        <a href={place.website} target="_blank" rel="noopener noreferrer" className="hover:text-primary truncate max-w-[120px] md:max-w-[180px] lg:max-w-[240px]">
                           {place.website.replace(/https?:\/\/(www\.)?/, "")}
                         </a>
                       </div>

@@ -151,7 +151,7 @@ export default function Leads() {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2 ml-4">
+                <div className="flex items-center gap-2 sm:ml-4">
                   <Select value={lead.status} onValueChange={(v) => updateStatus(lead.id, v)}>
                     <SelectTrigger className="w-32 h-8 text-xs">
                       <Badge className={statusInfo?.color || ""}>

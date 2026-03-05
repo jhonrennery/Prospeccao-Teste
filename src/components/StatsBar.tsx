@@ -23,7 +23,7 @@ export function StatsBar({ totalSearches, totalPlaces, totalEmails, totalLeads }
             <Icon className={`h-4 w-4 ${color}`} />
           </div>
           <div>
-            <div className="font-display text-xl font-bold text-foreground">{value}</div>
+            <div className="font-display text-lg md:text-xl font-bold text-foreground">{value}</div>
             <div className="text-xs text-muted-foreground">{label}</div>
           </div>
         </div>

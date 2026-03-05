@@ -58,7 +58,7 @@ export default function Searches() {
       ) : (
         <div className="space-y-2">
           {jobs.map((job) => (
-            <div key={job.id} className="glass-card p-4 flex items-center justify-between animate-slide-in">
+            <div key={job.id} className="glass-card p-3 md:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-0 animate-slide-in">
               <div className="flex items-center gap-4">
                 <div className="flex h-10 w-10 items-center justify-center rounded-md bg-secondary">
                   <Search className="h-4 w-4 text-muted-foreground" />
