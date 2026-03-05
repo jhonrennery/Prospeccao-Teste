@@ -68,6 +68,7 @@ export function SearchForm({ onSearch, isLoading }: SearchFormProps) {
   const [params, setParams] = useState<SearchParams>({
     segment: "",
     location: "",
+    state: "",
     radius_km: 10,
     minimum_rating: 0,
     has_website: false,
