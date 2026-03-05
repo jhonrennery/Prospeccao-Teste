@@ -43,7 +43,7 @@ export function SearchForm({ onSearch, isLoading }: SearchFormProps) {
         <h2 className="font-display text-lg font-semibold text-foreground">Nova Prospecção</h2>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
         <div className="space-y-2">
           <Label className="text-muted-foreground text-xs uppercase tracking-wider">Segmento</Label>
           <div className="relative">
