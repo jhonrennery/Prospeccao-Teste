@@ -13,6 +13,7 @@ import Index from "./pages/Index";
 import Leads from "./pages/Leads";
 import Searches from "./pages/Searches";
 import ExportPage from "./pages/Export";
+import KanbanPage from "./pages/Kanban";
 import NotFound from "./pages/NotFound";
 import type { Session } from "@supabase/supabase-js";
 
@@ -37,6 +38,7 @@ function AuthenticatedLayout() {
           <Route path="/leads" element={<Leads />} />
           <Route path="/searches" element={<Searches />} />
           <Route path="/export" element={<ExportPage />} />
+          <Route path="/kanban" element={<KanbanPage />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </main>
