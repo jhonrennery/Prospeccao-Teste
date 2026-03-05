@@ -1,8 +1,8 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import {
   Search, MapPin, Star, Globe, Hash, SlidersHorizontal,
   ChevronDown, ChevronUp, MessageSquare, Phone, Mail,
-  Filter, Languages, Tag, Building2
+  Filter, Languages, Tag, Building2, Navigation, Loader2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,6 +12,7 @@ import { Slider } from "@/components/ui/slider";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import { useBrazilianLocations } from "@/hooks/useBrazilianLocations";
 
 interface SearchFormProps {
   onSearch: (params: SearchParams) => void;
@@ -22,6 +23,9 @@ export interface SearchParams {
   segment: string;
   location: string;
   state: string;
+  city: string;
+  neighborhood: string;
+  cep: string;
   radius_km: number;
   minimum_rating: number;
   has_website: boolean;
@@ -69,6 +73,9 @@ export function SearchForm({ onSearch, isLoading }: SearchFormProps) {
     segment: "",
     location: "",
     state: "",
+    city: "",
+    neighborhood: "",
+    cep: "",
     radius_km: 10,
     minimum_rating: 0,
     has_website: false,
@@ -84,10 +91,34 @@ export function SearchForm({ onSearch, isLoading }: SearchFormProps) {
     category_filter: "",
   });
 
+  const { cities, districts, loadingCities, loadingDistricts } = useBrazilianLocations(params.state, params.city);
+
+  const [citySearch, setCitySearch] = useState("");
+  const filteredCities = useMemo(() => {
+    if (!citySearch) return cities.slice(0, 50);
+    return cities.filter((c) => c.toLowerCase().includes(citySearch.toLowerCase())).slice(0, 50);
+  }, [cities, citySearch]);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!params.segment.trim() || !params.location.trim()) return;
-    onSearch(params);
+    if (!params.segment.trim()) return;
+    // Build location from city/state/neighborhood/cep
+    const hasLocation = params.city || params.location.trim() || params.cep.trim();
+    if (!hasLocation) return;
+
+    // Build the location string for the search
+    let builtLocation = params.location.trim();
+    if (params.city) {
+      builtLocation = params.city;
+      if (params.neighborhood && params.neighborhood !== "all") {
+        builtLocation = `${params.neighborhood}, ${params.city}`;
+      }
+    }
+    if (params.cep.trim()) {
+      builtLocation = builtLocation ? `${builtLocation}, ${params.cep.trim()}` : params.cep.trim();
+    }
+
+    onSearch({ ...params, location: builtLocation });
   };
 
   const activeFiltersCount = [
@@ -120,8 +151,8 @@ export function SearchForm({ onSearch, isLoading }: SearchFormProps) {
       </div>
 
       <div className="p-4 md:p-6 space-y-4 md:space-y-5">
-        {/* Main inputs */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-4">
+        {/* Main inputs - Segmento */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
           <div className="space-y-2 relative">
             <Label className="text-muted-foreground text-xs uppercase tracking-wider">Segmento</Label>
             <div className="relative">
@@ -160,24 +191,15 @@ export function SearchForm({ onSearch, isLoading }: SearchFormProps) {
             )}
           </div>
 
-          <div className="space-y-2">
-            <Label className="text-muted-foreground text-xs uppercase tracking-wider">Cidade</Label>
-            <div className="relative">
-              <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Ex: São Paulo"
-                value={params.location}
-                onChange={(e) => setParams((p) => ({ ...p, location: e.target.value }))}
-                className="pl-10 bg-secondary border-border"
-              />
-            </div>
-          </div>
-
+          {/* Estado */}
           <div className="space-y-2">
             <Label className="text-muted-foreground text-xs uppercase tracking-wider">Estado (UF)</Label>
             <Select
               value={params.state}
-              onValueChange={(v) => setParams((p) => ({ ...p, state: v }))}
+              onValueChange={(v) => {
+                setParams((p) => ({ ...p, state: v, city: "", neighborhood: "", location: "" }));
+                setCitySearch("");
+              }}
             >
               <SelectTrigger className="bg-secondary border-border">
                 <SelectValue placeholder="Selecione o estado" />
@@ -190,6 +212,98 @@ export function SearchForm({ onSearch, isLoading }: SearchFormProps) {
                 ))}
               </SelectContent>
             </Select>
+          </div>
+        </div>
+
+        {/* Location row - Cidade, Bairro, CEP */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-4">
+          {/* Cidade - dropdown when state selected, input otherwise */}
+          <div className="space-y-2">
+            <Label className="text-muted-foreground text-xs uppercase tracking-wider flex items-center gap-1">
+              <MapPin className="h-3 w-3" /> Cidade
+              {loadingCities && <Loader2 className="h-3 w-3 animate-spin text-primary" />}
+            </Label>
+            {params.state && params.state !== "all" && cities.length > 0 ? (
+              <Select
+                value={params.city}
+                onValueChange={(v) => {
+                  setParams((p) => ({ ...p, city: v, neighborhood: "", location: v }));
+                }}
+              >
+                <SelectTrigger className="bg-secondary border-border">
+                  <SelectValue placeholder="Selecione a cidade" />
+                </SelectTrigger>
+                <SelectContent>
+                  <div className="px-2 py-1.5">
+                    <Input
+                      placeholder="Buscar cidade..."
+                      value={citySearch}
+                      onChange={(e) => setCitySearch(e.target.value)}
+                      className="h-8 text-sm bg-background"
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                  </div>
+                  <SelectItem value="all">Todas as cidades</SelectItem>
+                  {filteredCities.map((c) => (
+                    <SelectItem key={c} value={c}>{c}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            ) : (
+              <div className="relative">
+                <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Ex: São Paulo"
+                  value={params.location}
+                  onChange={(e) => setParams((p) => ({ ...p, location: e.target.value }))}
+                  className="pl-10 bg-secondary border-border"
+                />
+              </div>
+            )}
+          </div>
+
+          {/* Bairro */}
+          <div className="space-y-2">
+            <Label className="text-muted-foreground text-xs uppercase tracking-wider flex items-center gap-1">
+              <Navigation className="h-3 w-3" /> Bairro
+              {loadingDistricts && <Loader2 className="h-3 w-3 animate-spin text-primary" />}
+            </Label>
+            {params.city && params.city !== "all" && districts.length > 0 ? (
+              <Select
+                value={params.neighborhood}
+                onValueChange={(v) => setParams((p) => ({ ...p, neighborhood: v }))}
+              >
+                <SelectTrigger className="bg-secondary border-border">
+                  <SelectValue placeholder="Selecione o bairro" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos os bairros</SelectItem>
+                  {districts.map((d) => (
+                    <SelectItem key={d} value={d}>{d}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            ) : (
+              <Input
+                placeholder="Ex: Centro, Jardins..."
+                value={params.neighborhood}
+                onChange={(e) => setParams((p) => ({ ...p, neighborhood: e.target.value }))}
+                className="bg-secondary border-border"
+                disabled={!params.city && !params.location}
+              />
+            )}
+          </div>
+
+          {/* CEP */}
+          <div className="space-y-2">
+            <Label className="text-muted-foreground text-xs uppercase tracking-wider">CEP</Label>
+            <Input
+              placeholder="Ex: 01001-000"
+              value={params.cep}
+              onChange={(e) => setParams((p) => ({ ...p, cep: e.target.value }))}
+              className="bg-secondary border-border"
+            />
+            <p className="text-[10px] text-muted-foreground/70">Opcional - refina a localização</p>
           </div>
         </div>
 
@@ -391,22 +505,25 @@ export function SearchForm({ onSearch, isLoading }: SearchFormProps) {
         {/* Submit */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0 pt-2">
           <div className="text-xs text-muted-foreground/70">
-            {params.segment && params.location ? (
+            {params.segment && (params.city || params.location) ? (
               <span>
                 Buscando <span className="text-foreground font-medium">{params.segment}</span> em{" "}
                 <span className="text-foreground font-medium">
-                  {params.location}{params.state && params.state !== "all" ? `, ${params.state}` : ""}
+                  {params.neighborhood && params.neighborhood !== "all" ? `${params.neighborhood}, ` : ""}
+                  {params.city && params.city !== "all" ? params.city : params.location}
+                  {params.state && params.state !== "all" ? `, ${params.state}` : ""}
                 </span>
+                {params.cep && <span> (CEP: {params.cep})</span>}
                 {params.radius_km > 0 && <span> ({params.radius_km}km)</span>}
               </span>
             ) : (
-              <span>Preencha segmento e cidade</span>
+              <span>Preencha segmento e localização</span>
             )}
           </div>
 
           <Button
             type="submit"
-            disabled={isLoading || !params.segment.trim() || !params.location.trim()}
+            disabled={isLoading || !params.segment.trim() || (!params.city && !params.location.trim() && !params.cep.trim())}
             className="min-w-[180px]"
           >
             {isLoading ? (
