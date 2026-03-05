@@ -37,13 +37,13 @@ export function SearchForm({ onSearch, isLoading }: SearchFormProps) {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="glass-card p-6 space-y-6 animate-slide-in">
+    <form onSubmit={handleSubmit} className="glass-card p-4 md:p-6 space-y-4 md:space-y-6 animate-slide-in">
       <div className="flex items-center gap-2 mb-2">
         <Search className="h-5 w-5 text-primary" />
         <h2 className="font-display text-lg font-semibold text-foreground">Nova Prospecção</h2>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
         <div className="space-y-2">
           <Label className="text-muted-foreground text-xs uppercase tracking-wider">Segmento</Label>
           <div className="relative">
@@ -71,7 +71,7 @@ export function SearchForm({ onSearch, isLoading }: SearchFormProps) {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <Label className="text-muted-foreground text-xs uppercase tracking-wider">Raio</Label>
@@ -119,7 +119,7 @@ export function SearchForm({ onSearch, isLoading }: SearchFormProps) {
         </div>
       </div>
 
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
         <div className="flex items-center gap-2">
           <Switch
             checked={params.has_website}

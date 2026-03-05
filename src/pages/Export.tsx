@@ -57,7 +57,7 @@ export default function ExportPage() {
         <p className="text-sm text-muted-foreground mt-1">Exporte seus leads com dados completos</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
         <div className="glass-card p-6 space-y-4">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-md bg-primary/10">

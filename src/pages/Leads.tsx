@@ -95,7 +95,7 @@ export default function Leads() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
         <div>
           <h1 className="font-display text-2xl font-bold text-foreground flex items-center gap-2">
             <Users className="h-6 w-6 text-primary" /> Leads
@@ -127,7 +127,7 @@ export default function Leads() {
           {filtered.map((lead) => {
             const statusInfo = statusOptions.find((s) => s.value === lead.status);
             return (
-              <div key={lead.id} className="glass-card p-4 flex items-center justify-between animate-slide-in">
+              <div key={lead.id} className="glass-card p-3 md:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-0 animate-slide-in">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     <span className="font-medium text-foreground">{lead.place.name}</span>
@@ -135,7 +135,7 @@ export default function Leads() {
                       <Badge variant="secondary" className="text-[10px]">{lead.place.category}</Badge>
                     )}
                   </div>
-                  <div className="flex items-center gap-4 mt-1 text-xs text-muted-foreground">
+                  <div className="flex flex-wrap items-center gap-2 md:gap-4 mt-1 text-xs text-muted-foreground">
                     {lead.place.address && (
                       <span className="flex items-center gap-1"><MapPin className="h-3 w-3" /> {lead.place.address}</span>
                     )}
@@ -151,7 +151,7 @@ export default function Leads() {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2 ml-4">
+                <div className="flex items-center gap-2 sm:ml-4">
                   <Select value={lead.status} onValueChange={(v) => updateStatus(lead.id, v)}>
                     <SelectTrigger className="w-32 h-8 text-xs">
                       <Badge className={statusInfo?.color || ""}>
