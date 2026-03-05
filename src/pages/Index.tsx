@@ -63,13 +63,18 @@ export default function Index() {
 
       if (jobError) throw jobError;
 
-      // Call scraping edge function
+      // Call scraping edge function with all params
       const { data, error } = await supabase.functions.invoke("scrape-places", {
         body: {
           search_job_id: job.id,
           segment: params.segment,
           location: params.location,
           max_results: params.max_results,
+          radius_km: params.radius_km,
+          keywords_include: params.keywords_include,
+          keywords_exclude: params.keywords_exclude,
+          category_filter: params.category_filter,
+          search_language: params.search_language,
         },
       });
 
