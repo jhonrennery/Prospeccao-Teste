@@ -221,43 +221,91 @@ export default function Dashboard() {
       </div>
 
       {/* Charts row */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* Funnel */}
-        <div className="glass-card p-4 md:p-5">
-          <h3 className="font-display text-sm font-semibold text-foreground mb-4">Funil de Conversão</h3>
-          <div className="space-y-3">
+      {/* Funnel Chart - Full Width */}
+      <div className="glass-card p-4 md:p-5">
+        <h3 className="font-display text-sm font-semibold text-foreground mb-1">Funil de Conversão do Pipeline</h3>
+        <p className="text-[11px] text-muted-foreground mb-4">Visualize o drop-off entre cada etapa da prospecção</p>
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_1.2fr] gap-6 items-center">
+          {/* Visual funnel */}
+          <div className="flex flex-col items-center gap-1">
             {funnelData.map((item, i) => {
               const maxVal = funnelData[0]?.value || 1;
-              const pct = maxVal > 0 ? (item.value / maxVal) * 100 : 0;
+              const widthPct = maxVal > 0 ? Math.max((item.value / maxVal) * 100, 12) : 12;
               const dropoff = i > 0 && funnelData[i - 1].value > 0
                 ? ((funnelData[i - 1].value - item.value) / funnelData[i - 1].value * 100)
                 : 0;
               return (
-                <div key={item.name} className="space-y-1">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="text-foreground font-medium">{item.name}</span>
-                    <div className="flex items-center gap-2">
-                      <span className="font-mono text-foreground">{item.value}</span>
-                      {i > 0 && dropoff > 0 && (
-                        <Badge variant="secondary" className="text-[9px] font-mono text-destructive">
-                          <ArrowDownRight className="h-2.5 w-2.5 mr-0.5" />
-                          -{dropoff.toFixed(0)}%
-                        </Badge>
-                      )}
+                <div key={item.name} className="w-full flex flex-col items-center">
+                  <div
+                    className="h-12 rounded-lg flex items-center justify-between px-4 transition-all duration-500"
+                    style={{
+                      width: `${widthPct}%`,
+                      backgroundColor: item.fill,
+                      minWidth: "120px",
+                    }}
+                  >
+                    <span className="text-white text-xs font-semibold truncate">{item.name}</span>
+                    <span className="text-white/90 text-xs font-mono font-bold">{item.value}</span>
+                  </div>
+                  {i < funnelData.length - 1 && dropoff > 0 && (
+                    <div className="flex items-center gap-1 py-0.5">
+                      <ArrowDownRight className="h-3 w-3 text-destructive" />
+                      <span className="text-[10px] font-mono text-destructive">-{dropoff.toFixed(0)}% drop-off</span>
                     </div>
-                  </div>
-                  <div className="h-6 bg-secondary rounded-md overflow-hidden">
-                    <div
-                      className="h-full rounded-md transition-all duration-500"
-                      style={{ width: `${Math.max(pct, 2)}%`, backgroundColor: item.fill }}
-                    />
-                  </div>
+                  )}
+                  {i < funnelData.length - 1 && dropoff === 0 && <div className="py-1" />}
                 </div>
               );
             })}
           </div>
-        </div>
 
+          {/* Conversion rates between stages */}
+          <div className="space-y-3">
+            <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Taxas entre etapas</h4>
+            {[
+              { from: "Prospectados", to: "Contatados", rate: data.contactRate, fromVal: data.totalProspected, toVal: data.totalContacted },
+              { from: "Contatados", to: "Interessados", rate: data.interestRate, fromVal: data.totalContacted, toVal: data.totalInterested },
+              { from: "Interessados", to: "Convertidos", rate: data.closeRate, fromVal: data.totalInterested, toVal: data.totalConverted },
+            ].map((stage) => (
+              <div key={stage.from} className="glass-card p-3 space-y-2">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-muted-foreground">{stage.from} → {stage.to}</span>
+                  <span className={`font-mono font-bold text-sm ${
+                    stage.rate > 50 ? "text-primary" : stage.rate > 20 ? "text-warning" : "text-destructive"
+                  }`}>
+                    {formatPercent(stage.rate)}
+                  </span>
+                </div>
+                <div className="h-2 bg-secondary rounded-full overflow-hidden">
+                  <div
+                    className="h-full rounded-full transition-all duration-700"
+                    style={{
+                      width: `${Math.max(stage.rate, 1)}%`,
+                      backgroundColor: stage.rate > 50 ? COLORS.success : stage.rate > 20 ? COLORS.warning : COLORS.destructive,
+                    }}
+                  />
+                </div>
+                <div className="flex justify-between text-[10px] text-muted-foreground/70">
+                  <span>{stage.fromVal} entradas</span>
+                  <span>{stage.toVal} saídas</span>
+                </div>
+              </div>
+            ))}
+            <div className="glass-card p-3 border-primary/20 bg-primary/5">
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-foreground font-medium">Conversão geral (ponta a ponta)</span>
+                <span className="font-mono font-bold text-lg text-primary">{formatPercent(data.conversionRate)}</span>
+              </div>
+              <p className="text-[10px] text-muted-foreground mt-1">
+                De {data.totalProspected} prospectados, {data.totalConverted} converteram
+                {data.totalConverted > 0 && ` (1 a cada ${Math.ceil(data.totalProspected / data.totalConverted)})`}
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Status distribution pie */}
         <div className="glass-card p-4 md:p-5">
           <h3 className="font-display text-sm font-semibold text-foreground mb-4">Distribuição por Status</h3>
@@ -302,6 +350,36 @@ export default function Dashboard() {
               ))}
             </div>
           </div>
+        </div>
+
+        {/* Revenue by stage */}
+        <div className="glass-card p-4 md:p-5">
+          <h3 className="font-display text-sm font-semibold text-foreground mb-4">Receita por Etapa</h3>
+          <ResponsiveContainer width="100%" height={200}>
+            <BarChart data={[
+              { name: "Pipeline", value: data.revenuePipeline, fill: COLORS.info },
+              { name: "Fechada", value: data.revenueConverted, fill: COLORS.success },
+              { name: "Perdida", value: data.revenueLost, fill: COLORS.destructive },
+            ]}>
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+              <XAxis dataKey="name" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
+              <YAxis tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} tickFormatter={(v) => `R$${(v/1000).toFixed(0)}k`} />
+              <Tooltip
+                formatter={(value: number) => [formatCurrency(value), "Valor"]}
+                contentStyle={{
+                  backgroundColor: "hsl(var(--card))",
+                  border: "1px solid hsl(var(--border))",
+                  borderRadius: "8px",
+                  fontSize: "12px",
+                }}
+              />
+              <Bar dataKey="value" radius={[6, 6, 0, 0]}>
+                {[COLORS.info, COLORS.success, COLORS.destructive].map((c, i) => (
+                  <Cell key={i} fill={c} />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
         </div>
       </div>
 
