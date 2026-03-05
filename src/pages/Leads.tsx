@@ -46,6 +46,7 @@ export default function Leads() {
   const [loading, setLoading] = useState(true);
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
+  const [mapsDialog, setMapsDialog] = useState<{ name: string; url: string } | null>(null);
 
   useEffect(() => {
     loadLeads();
