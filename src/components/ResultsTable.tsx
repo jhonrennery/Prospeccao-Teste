@@ -49,7 +49,7 @@ export function ResultsTable({ results, onAddToLeads, onEnrich, isEnriching }: R
 
   return (
     <div className="glass-card animate-slide-in">
-      <div className="flex items-center justify-between border-b border-border px-4 py-3">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0 border-b border-border px-3 md:px-4 py-3">
         <div className="flex items-center gap-3">
           <span className="text-sm text-muted-foreground">
             <span className="font-mono text-foreground">{results.length}</span> resultados
