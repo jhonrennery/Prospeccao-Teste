@@ -73,6 +73,9 @@ export function SearchForm({ onSearch, isLoading }: SearchFormProps) {
     segment: "",
     location: "",
     state: "",
+    city: "",
+    neighborhood: "",
+    cep: "",
     radius_km: 10,
     minimum_rating: 0,
     has_website: false,
@@ -87,6 +90,14 @@ export function SearchForm({ onSearch, isLoading }: SearchFormProps) {
     keywords_exclude: "",
     category_filter: "",
   });
+
+  const { cities, districts, loadingCities, loadingDistricts } = useBrazilianLocations(params.state, params.city);
+
+  const [citySearch, setCitySearch] = useState("");
+  const filteredCities = useMemo(() => {
+    if (!citySearch) return cities.slice(0, 50);
+    return cities.filter((c) => c.toLowerCase().includes(citySearch.toLowerCase())).slice(0, 50);
+  }, [cities, citySearch]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
