@@ -351,6 +351,36 @@ export default function Dashboard() {
             </div>
           </div>
         </div>
+
+        {/* Revenue by stage */}
+        <div className="glass-card p-4 md:p-5">
+          <h3 className="font-display text-sm font-semibold text-foreground mb-4">Receita por Etapa</h3>
+          <ResponsiveContainer width="100%" height={200}>
+            <BarChart data={[
+              { name: "Pipeline", value: data.revenuePipeline, fill: COLORS.info },
+              { name: "Fechada", value: data.revenueConverted, fill: COLORS.success },
+              { name: "Perdida", value: data.revenueLost, fill: COLORS.destructive },
+            ]}>
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+              <XAxis dataKey="name" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
+              <YAxis tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} tickFormatter={(v) => `R$${(v/1000).toFixed(0)}k`} />
+              <Tooltip
+                formatter={(value: number) => [formatCurrency(value), "Valor"]}
+                contentStyle={{
+                  backgroundColor: "hsl(var(--card))",
+                  border: "1px solid hsl(var(--border))",
+                  borderRadius: "8px",
+                  fontSize: "12px",
+                }}
+              />
+              <Bar dataKey="value" radius={[6, 6, 0, 0]}>
+                {[COLORS.info, COLORS.success, COLORS.destructive].map((c, i) => (
+                  <Cell key={i} fill={c} />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
       </div>
 
       {/* Data quality / enrichment stats */}
