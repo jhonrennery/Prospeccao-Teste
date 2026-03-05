@@ -104,7 +104,7 @@ export default function Dashboard() {
     setLoading(false);
   };
 
-  const { data, funnelData, statusDistribution } = useMemo(() => {
+  const { data, funnelData, statusDistribution, timelineData } = useMemo(() => {
     const cutoff = getDateCutoff(period);
     const filterByDate = <T extends { created_at: string }>(arr: T[]) =>
       cutoff ? arr.filter((item) => new Date(item.created_at) >= cutoff) : arr;
