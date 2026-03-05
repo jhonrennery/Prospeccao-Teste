@@ -26,6 +26,7 @@ interface KanbanItem {
     website: string | null;
     rating: number | null;
     category: string | null;
+    google_maps_url: string | null;
   };
   email?: string | null;
 }
