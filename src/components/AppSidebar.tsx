@@ -1,10 +1,11 @@
-import { Search, Users, Download, BarChart3, Settings, Zap } from "lucide-react";
+import { Search, Users, Download, BarChart3, Settings, Zap, Kanban } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 
 const navItems = [
   { icon: Search, label: "Prospectar", path: "/" },
   { icon: Users, label: "Leads", path: "/leads" },
+  { icon: Kanban, label: "Pipeline", path: "/kanban" },
   { icon: BarChart3, label: "Buscas", path: "/searches" },
   { icon: Download, label: "Exportar", path: "/export" },
 ];
