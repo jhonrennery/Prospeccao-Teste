@@ -16,7 +16,7 @@ export function StatsBar({ totalSearches, totalPlaces, totalEmails, totalLeads }
   ];
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 md:gap-3">
       {stats.map(({ icon: Icon, label, value, color }) => (
         <div key={label} className="glass-card p-4 flex items-center gap-3">
           <div className="flex h-9 w-9 items-center justify-center rounded-md bg-secondary">
