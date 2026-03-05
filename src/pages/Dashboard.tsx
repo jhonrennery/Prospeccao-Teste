@@ -185,7 +185,7 @@ export default function Dashboard() {
     return { data: computedData, funnelData: computedFunnel, statusDistribution: computedStatus };
   }, [allLeadsRaw, allPlacesRaw, allEnrichmentsRaw, searchCountRaw, period]);
 
-  if (loading || !data) {
+  if (loading) {
     return (
       <div className="space-y-6">
         <h1 className="font-display text-2xl font-bold text-foreground flex items-center gap-2">
@@ -199,13 +199,29 @@ export default function Dashboard() {
   return (
     <div className="space-y-5 max-w-7xl">
       {/* Header */}
-      <div>
-        <h1 className="font-display text-2xl font-bold text-foreground flex items-center gap-2">
-          <BarChart3 className="h-6 w-6 text-primary" /> Dashboard
-        </h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          Visão completa de performance, receita e taxa de conversão
-        </p>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div>
+          <h1 className="font-display text-2xl font-bold text-foreground flex items-center gap-2">
+            <BarChart3 className="h-6 w-6 text-primary" /> Dashboard
+          </h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            Visão completa de performance, receita e taxa de conversão
+          </p>
+        </div>
+        <div className="flex items-center gap-1 bg-secondary rounded-lg p-1">
+          {(Object.keys(PERIOD_LABELS) as PeriodFilter[]).map((p) => (
+            <Button
+              key={p}
+              size="sm"
+              variant={period === p ? "default" : "ghost"}
+              className="text-xs h-7 px-3"
+              onClick={() => setPeriod(p)}
+            >
+              <CalendarDays className="h-3 w-3 mr-1" />
+              {PERIOD_LABELS[p]}
+            </Button>
+          ))}
+        </div>
       </div>
 
       {/* Revenue cards */}
