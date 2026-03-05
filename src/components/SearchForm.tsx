@@ -37,7 +37,7 @@ export function SearchForm({ onSearch, isLoading }: SearchFormProps) {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="glass-card p-6 space-y-6 animate-slide-in">
+    <form onSubmit={handleSubmit} className="glass-card p-4 md:p-6 space-y-4 md:space-y-6 animate-slide-in">
       <div className="flex items-center gap-2 mb-2">
         <Search className="h-5 w-5 text-primary" />
         <h2 className="font-display text-lg font-semibold text-foreground">Nova Prospecção</h2>
