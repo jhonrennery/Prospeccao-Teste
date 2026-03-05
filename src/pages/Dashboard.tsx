@@ -53,19 +53,39 @@ const COLORS = {
   muted: "hsl(215, 12%, 75%)",
 };
 
+type PeriodFilter = "7d" | "30d" | "90d" | "all";
+
+const PERIOD_LABELS: Record<PeriodFilter, string> = {
+  "7d": "7 dias",
+  "30d": "30 dias",
+  "90d": "90 dias",
+  all: "Tudo",
+};
+
+function getDateCutoff(period: PeriodFilter): Date | null {
+  const now = new Date();
+  switch (period) {
+    case "7d": return startOfDay(subDays(now, 7));
+    case "30d": return startOfDay(subDays(now, 30));
+    case "90d": return startOfDay(subMonths(now, 3));
+    default: return null;
+  }
+}
+
 export default function Dashboard() {
-  const [data, setData] = useState<DashboardData | null>(null);
-  const [funnelData, setFunnelData] = useState<any[]>([]);
-  const [statusDistribution, setStatusDistribution] = useState<any[]>([]);
+  const [allLeadsRaw, setAllLeadsRaw] = useState<any[]>([]);
+  const [allPlacesRaw, setAllPlacesRaw] = useState<any[]>([]);
+  const [allEnrichmentsRaw, setAllEnrichmentsRaw] = useState<any[]>([]);
+  const [searchCountRaw, setSearchCountRaw] = useState(0);
+  const [period, setPeriod] = useState<PeriodFilter>("all");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    loadDashboard();
+    loadRawData();
   }, []);
 
-  const loadDashboard = async () => {
+  const loadRawData = async () => {
     setLoading(true);
-
     const [
       { data: leads },
       { data: places },
@@ -73,14 +93,25 @@ export default function Dashboard() {
       { count: searchCount },
     ] = await Promise.all([
       supabase.from("leads").select("*"),
-      supabase.from("places").select("id, phone, website"),
-      supabase.from("place_enrichment").select("id, email").not("email", "is", null),
+      supabase.from("places").select("id, phone, website, created_at"),
+      supabase.from("place_enrichment").select("id, email, created_at").not("email", "is", null),
       supabase.from("search_jobs").select("id", { count: "exact", head: true }),
     ]);
+    setAllLeadsRaw(leads || []);
+    setAllPlacesRaw(places || []);
+    setAllEnrichmentsRaw(enrichments || []);
+    setSearchCountRaw(searchCount || 0);
+    setLoading(false);
+  };
 
-    const allLeads = leads || [];
-    const allPlaces = places || [];
-    const allEnrichments = enrichments || [];
+  const { data, funnelData, statusDistribution } = useMemo(() => {
+    const cutoff = getDateCutoff(period);
+    const filterByDate = <T extends { created_at: string }>(arr: T[]) =>
+      cutoff ? arr.filter((item) => new Date(item.created_at) >= cutoff) : arr;
+
+    const allLeads = filterByDate(allLeadsRaw);
+    const allPlaces = filterByDate(allPlacesRaw);
+    const allEnrichments = filterByDate(allEnrichmentsRaw);
 
     const totalProspected = allPlaces.length;
     const byStatus = (s: string) => allLeads.filter((l) => l.status === s);
@@ -114,7 +145,7 @@ export default function Dashboard() {
     const totalWithWebsite = allPlaces.filter((p) => p.website).length;
     const totalWithEmail = allEnrichments.length;
 
-    setData({
+    const computedData: DashboardData = {
       totalProspected,
       totalContacted,
       totalInterested,
@@ -130,29 +161,29 @@ export default function Dashboard() {
       closeRate,
       lossRate,
       costPerLead: 0,
-      totalSearches: searchCount || 0,
+      totalSearches: searchCountRaw,
       totalWithPhone,
       totalWithEmail,
       totalWithWebsite,
-    });
+    };
 
-    setFunnelData([
+    const computedFunnel = [
       { name: "Prospectados", value: totalProspected, fill: COLORS.info },
       { name: "Contatados", value: totalContacted, fill: COLORS.warning },
       { name: "Interessados", value: totalInterested, fill: COLORS.primary },
       { name: "Convertidos", value: totalConverted, fill: COLORS.success },
-    ]);
+    ];
 
-    setStatusDistribution([
+    const computedStatus = [
       { name: "Novo", value: newLeads.length, color: COLORS.info },
       { name: "Contatado", value: contacted.length, color: COLORS.warning },
       { name: "Interessado", value: interested.length, color: COLORS.primary },
       { name: "Convertido", value: converted.length, color: COLORS.success },
       { name: "Perdido", value: lost.length, color: COLORS.destructive },
-    ]);
+    ];
 
-    setLoading(false);
-  };
+    return { data: computedData, funnelData: computedFunnel, statusDistribution: computedStatus };
+  }, [allLeadsRaw, allPlacesRaw, allEnrichmentsRaw, searchCountRaw, period]);
 
   if (loading || !data) {
     return (
