@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo } from "react";
-import { subDays, subMonths, startOfDay } from "date-fns";
+import { subDays, subMonths, startOfDay, format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import {
   BarChart3, TrendingUp, DollarSign, Users, Target,
@@ -104,7 +104,7 @@ export default function Dashboard() {
     setLoading(false);
   };
 
-  const { data, funnelData, statusDistribution } = useMemo(() => {
+  const { data, funnelData, statusDistribution, timelineData } = useMemo(() => {
     const cutoff = getDateCutoff(period);
     const filterByDate = <T extends { created_at: string }>(arr: T[]) =>
       cutoff ? arr.filter((item) => new Date(item.created_at) >= cutoff) : arr;
@@ -182,7 +182,34 @@ export default function Dashboard() {
       { name: "Perdido", value: lost.length, color: COLORS.destructive },
     ];
 
-    return { data: computedData, funnelData: computedFunnel, statusDistribution: computedStatus };
+    // Monthly timeline data
+    const monthMap = new Map<string, { month: string; prospectados: number; convertidos: number; receita: number; perdidos: number }>();
+    
+    allPlaces.forEach((p) => {
+      const key = format(new Date(p.created_at), "yyyy-MM");
+      const label = format(new Date(p.created_at), "MMM/yy");
+      if (!monthMap.has(key)) monthMap.set(key, { month: label, prospectados: 0, convertidos: 0, receita: 0, perdidos: 0 });
+      monthMap.get(key)!.prospectados++;
+    });
+
+    allLeads.forEach((l) => {
+      const key = format(new Date(l.created_at), "yyyy-MM");
+      const label = format(new Date(l.created_at), "MMM/yy");
+      if (!monthMap.has(key)) monthMap.set(key, { month: label, prospectados: 0, convertidos: 0, receita: 0, perdidos: 0 });
+      if (l.status === "converted") {
+        monthMap.get(key)!.convertidos++;
+        monthMap.get(key)!.receita += Number(l.estimated_value) || 0;
+      }
+      if (l.status === "lost") {
+        monthMap.get(key)!.perdidos++;
+      }
+    });
+
+    const computedTimeline = Array.from(monthMap.entries())
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([, v]) => v);
+
+    return { data: computedData, funnelData: computedFunnel, statusDistribution: computedStatus, timelineData: computedTimeline };
   }, [allLeadsRaw, allPlacesRaw, allEnrichmentsRaw, searchCountRaw, period]);
 
   if (loading) {
@@ -431,6 +458,67 @@ export default function Dashboard() {
           </ResponsiveContainer>
         </div>
       </div>
+
+      {/* Monthly evolution chart */}
+      {timelineData.length > 0 && (
+        <div className="glass-card p-4 md:p-5">
+          <h3 className="font-display text-sm font-semibold text-foreground mb-1">Evolução Mensal</h3>
+          <p className="text-[11px] text-muted-foreground mb-4">Prospecções, conversões e receita ao longo do tempo</p>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div>
+              <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Prospecções vs Conversões</h4>
+              <ResponsiveContainer width="100%" height={220}>
+                <AreaChart data={timelineData}>
+                  <defs>
+                    <linearGradient id="gradProspect" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor={COLORS.info} stopOpacity={0.3} />
+                      <stop offset="95%" stopColor={COLORS.info} stopOpacity={0} />
+                    </linearGradient>
+                    <linearGradient id="gradConvert" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor={COLORS.success} stopOpacity={0.3} />
+                      <stop offset="95%" stopColor={COLORS.success} stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <XAxis dataKey="month" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} />
+                  <YAxis tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: "hsl(var(--card))",
+                      border: "1px solid hsl(var(--border))",
+                      borderRadius: "8px",
+                      fontSize: "12px",
+                    }}
+                  />
+                  <Area type="monotone" dataKey="prospectados" name="Prospectados" stroke={COLORS.info} fill="url(#gradProspect)" strokeWidth={2} />
+                  <Area type="monotone" dataKey="convertidos" name="Convertidos" stroke={COLORS.success} fill="url(#gradConvert)" strokeWidth={2} />
+                  <Area type="monotone" dataKey="perdidos" name="Perdidos" stroke={COLORS.destructive} fill={COLORS.destructive} fillOpacity={0.1} strokeWidth={2} />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+            <div>
+              <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Receita Mensal (Convertida)</h4>
+              <ResponsiveContainer width="100%" height={220}>
+                <BarChart data={timelineData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <XAxis dataKey="month" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} />
+                  <YAxis tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} tickFormatter={(v) => `R$${(v / 1000).toFixed(0)}k`} />
+                  <Tooltip
+                    formatter={(value: number) => [formatCurrency(value), "Receita"]}
+                    contentStyle={{
+                      backgroundColor: "hsl(var(--card))",
+                      border: "1px solid hsl(var(--border))",
+                      borderRadius: "8px",
+                      fontSize: "12px",
+                    }}
+                  />
+                  <Bar dataKey="receita" name="Receita" fill={COLORS.success} radius={[6, 6, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Data quality / enrichment stats */}
       <div className="glass-card p-4 md:p-5">
