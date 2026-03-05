@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo } from "react";
-import { subDays, subMonths, startOfDay } from "date-fns";
+import { subDays, subMonths, startOfDay, format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import {
   BarChart3, TrendingUp, DollarSign, Users, Target,
