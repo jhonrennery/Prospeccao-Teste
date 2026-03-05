@@ -121,6 +121,7 @@ export default function Leads() {
 
   return (
     <>
+    <div className="space-y-5 max-w-5xl">
       {/* Header */}
       <div>
         <h1 className="font-display text-2xl font-bold text-foreground flex items-center gap-2">
