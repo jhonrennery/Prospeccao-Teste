@@ -23,6 +23,9 @@ export interface SearchParams {
   segment: string;
   location: string;
   state: string;
+  city: string;
+  neighborhood: string;
+  cep: string;
   radius_km: number;
   minimum_rating: number;
   has_website: boolean;
