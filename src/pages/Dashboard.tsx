@@ -182,7 +182,34 @@ export default function Dashboard() {
       { name: "Perdido", value: lost.length, color: COLORS.destructive },
     ];
 
-    return { data: computedData, funnelData: computedFunnel, statusDistribution: computedStatus };
+    // Monthly timeline data
+    const monthMap = new Map<string, { month: string; prospectados: number; convertidos: number; receita: number; perdidos: number }>();
+    
+    allPlaces.forEach((p) => {
+      const key = format(new Date(p.created_at), "yyyy-MM");
+      const label = format(new Date(p.created_at), "MMM/yy");
+      if (!monthMap.has(key)) monthMap.set(key, { month: label, prospectados: 0, convertidos: 0, receita: 0, perdidos: 0 });
+      monthMap.get(key)!.prospectados++;
+    });
+
+    allLeads.forEach((l) => {
+      const key = format(new Date(l.created_at), "yyyy-MM");
+      const label = format(new Date(l.created_at), "MMM/yy");
+      if (!monthMap.has(key)) monthMap.set(key, { month: label, prospectados: 0, convertidos: 0, receita: 0, perdidos: 0 });
+      if (l.status === "converted") {
+        monthMap.get(key)!.convertidos++;
+        monthMap.get(key)!.receita += Number(l.estimated_value) || 0;
+      }
+      if (l.status === "lost") {
+        monthMap.get(key)!.perdidos++;
+      }
+    });
+
+    const computedTimeline = Array.from(monthMap.entries())
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([, v]) => v);
+
+    return { data: computedData, funnelData: computedFunnel, statusDistribution: computedStatus, timelineData: computedTimeline };
   }, [allLeadsRaw, allPlacesRaw, allEnrichmentsRaw, searchCountRaw, period]);
 
   if (loading) {
