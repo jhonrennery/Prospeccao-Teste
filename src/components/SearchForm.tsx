@@ -101,8 +101,24 @@ export function SearchForm({ onSearch, isLoading }: SearchFormProps) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!params.segment.trim() || !params.location.trim()) return;
-    onSearch(params);
+    if (!params.segment.trim()) return;
+    // Build location from city/state/neighborhood/cep
+    const hasLocation = params.city || params.location.trim() || params.cep.trim();
+    if (!hasLocation) return;
+
+    // Build the location string for the search
+    let builtLocation = params.location.trim();
+    if (params.city) {
+      builtLocation = params.city;
+      if (params.neighborhood && params.neighborhood !== "all") {
+        builtLocation = `${params.neighborhood}, ${params.city}`;
+      }
+    }
+    if (params.cep.trim()) {
+      builtLocation = builtLocation ? `${builtLocation}, ${params.cep.trim()}` : params.cep.trim();
+    }
+
+    onSearch({ ...params, location: builtLocation });
   };
 
   const activeFiltersCount = [
