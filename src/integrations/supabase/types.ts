@@ -17,6 +17,7 @@ export type Database = {
       leads: {
         Row: {
           created_at: string
+          estimated_value: number | null
           id: string
           notes: string | null
           place_id: string
@@ -27,6 +28,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          estimated_value?: number | null
           id?: string
           notes?: string | null
           place_id: string
@@ -37,6 +39,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          estimated_value?: number | null
           id?: string
           notes?: string | null
           place_id?: string
