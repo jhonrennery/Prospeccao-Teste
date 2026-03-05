@@ -284,7 +284,18 @@ export default function KanbanPage() {
                                   <GripVertical className="h-4 w-4" />
                                 </div>
                                 <div className="flex-1 min-w-0">
-                                  <div className="font-medium text-sm text-foreground truncate">
+                                  <div
+                                    className={`font-medium text-sm truncate ${
+                                      item.place.google_maps_url
+                                        ? "text-foreground hover:text-primary cursor-pointer transition-colors"
+                                        : "text-foreground"
+                                    }`}
+                                    onClick={() => {
+                                      if (item.place.google_maps_url) {
+                                        setMapsDialog({ name: item.place.name, url: item.place.google_maps_url });
+                                      }
+                                    }}
+                                  >
                                     {item.place.name}
                                   </div>
                                   {item.place.category && (
