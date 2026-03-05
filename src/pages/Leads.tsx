@@ -234,20 +234,29 @@ export default function Leads() {
                           <Phone className="h-3 w-3 shrink-0" /> {lead.place.phone}
                         </a>
                       )}
-                      {lead.place.website && (
-                        <a
-                          href={lead.place.website.startsWith("http") ? lead.place.website : `https://${lead.place.website}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 text-primary hover:text-primary/80 underline underline-offset-2 transition-colors"
-                        >
-                          <Globe className="h-3 w-3 shrink-0" />
-                          <span className="truncate max-w-[250px]">
-                            {lead.place.website.replace(/https?:\/\/(www\.)?/, "").replace(/\/$/, "")}
-                          </span>
-                          <ExternalLink className="h-2.5 w-2.5" />
-                        </a>
-                      )}
+                      {lead.place.website && (() => {
+                        const raw = lead.place.website!;
+                        let baseUrl: string;
+                        try {
+                          const u = new URL(raw.startsWith("http") ? raw : `https://${raw}`);
+                          baseUrl = `${u.protocol}//${u.hostname}`;
+                        } catch {
+                          baseUrl = raw;
+                        }
+                        const display = baseUrl.replace(/https?:\/\/(www\.)?/, "");
+                        return (
+                          <a
+                            href={baseUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 text-primary hover:text-primary/80 underline underline-offset-2 transition-colors"
+                          >
+                            <Globe className="h-3 w-3 shrink-0" />
+                            <span className="truncate max-w-[250px]">{display}</span>
+                            <ExternalLink className="h-2.5 w-2.5" />
+                          </a>
+                        );
+                      })()}
                     </div>
 
                     {lead.estimated_value != null && lead.estimated_value > 0 && (
