@@ -1,8 +1,8 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import {
   Search, MapPin, Star, Globe, Hash, SlidersHorizontal,
   ChevronDown, ChevronUp, MessageSquare, Phone, Mail,
-  Filter, Languages, Tag, Building2
+  Filter, Languages, Tag, Building2, Navigation, Loader2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,6 +12,7 @@ import { Slider } from "@/components/ui/slider";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import { useBrazilianLocations } from "@/hooks/useBrazilianLocations";
 
 interface SearchFormProps {
   onSearch: (params: SearchParams) => void;
