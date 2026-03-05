@@ -91,6 +91,7 @@ export default function KanbanPage() {
           website: p.website,
           rating: p.rating ? Number(p.rating) : null,
           category: p.category,
+          google_maps_url: p.google_maps_url,
         },
         email: p.place_enrichment?.[0]?.email || null,
       };
