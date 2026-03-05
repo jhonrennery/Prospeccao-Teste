@@ -45,7 +45,7 @@ export default function Index() {
         return;
       }
 
-      // Build full location string
+      // Location is already built by SearchForm's handleSubmit
       const fullLocation = params.state && params.state !== "all"
         ? `${params.location}, ${params.state}`
         : params.location;
