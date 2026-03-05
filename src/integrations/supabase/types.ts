@@ -14,7 +14,195 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      leads: {
+        Row: {
+          created_at: string
+          id: string
+          notes: string | null
+          place_id: string
+          status: string
+          tags: string[] | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          notes?: string | null
+          place_id: string
+          status?: string
+          tags?: string[] | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          notes?: string | null
+          place_id?: string
+          status?: string
+          tags?: string[] | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "leads_place_id_fkey"
+            columns: ["place_id"]
+            isOneToOne: false
+            referencedRelation: "places"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      place_enrichment: {
+        Row: {
+          confidence_score: number | null
+          created_at: string
+          email: string | null
+          id: string
+          place_id: string
+          source: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          confidence_score?: number | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          place_id: string
+          source?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          confidence_score?: number | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          place_id?: string
+          source?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "place_enrichment_place_id_fkey"
+            columns: ["place_id"]
+            isOneToOne: false
+            referencedRelation: "places"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      places: {
+        Row: {
+          address: string | null
+          category: string | null
+          created_at: string
+          google_maps_url: string | null
+          id: string
+          latitude: number | null
+          longitude: number | null
+          name: string
+          phone: string | null
+          place_id: string | null
+          rating: number | null
+          search_job_id: string | null
+          total_reviews: number | null
+          user_id: string
+          website: string | null
+        }
+        Insert: {
+          address?: string | null
+          category?: string | null
+          created_at?: string
+          google_maps_url?: string | null
+          id?: string
+          latitude?: number | null
+          longitude?: number | null
+          name: string
+          phone?: string | null
+          place_id?: string | null
+          rating?: number | null
+          search_job_id?: string | null
+          total_reviews?: number | null
+          user_id: string
+          website?: string | null
+        }
+        Update: {
+          address?: string | null
+          category?: string | null
+          created_at?: string
+          google_maps_url?: string | null
+          id?: string
+          latitude?: number | null
+          longitude?: number | null
+          name?: string
+          phone?: string | null
+          place_id?: string | null
+          rating?: number | null
+          search_job_id?: string | null
+          total_reviews?: number | null
+          user_id?: string
+          website?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "places_search_job_id_fkey"
+            columns: ["search_job_id"]
+            isOneToOne: false
+            referencedRelation: "search_jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      search_jobs: {
+        Row: {
+          created_at: string
+          has_website: boolean | null
+          id: string
+          location: string
+          max_results: number | null
+          minimum_rating: number | null
+          radius_km: number | null
+          segment: string
+          status: string
+          total_found: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          has_website?: boolean | null
+          id?: string
+          location: string
+          max_results?: number | null
+          minimum_rating?: number | null
+          radius_km?: number | null
+          segment: string
+          status?: string
+          total_found?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          has_website?: boolean | null
+          id?: string
+          location?: string
+          max_results?: number | null
+          minimum_rating?: number | null
+          radius_km?: number | null
+          segment?: string
+          status?: string
+          total_found?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
