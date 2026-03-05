@@ -459,6 +459,67 @@ export default function Dashboard() {
         </div>
       </div>
 
+      {/* Monthly evolution chart */}
+      {timelineData.length > 0 && (
+        <div className="glass-card p-4 md:p-5">
+          <h3 className="font-display text-sm font-semibold text-foreground mb-1">Evolução Mensal</h3>
+          <p className="text-[11px] text-muted-foreground mb-4">Prospecções, conversões e receita ao longo do tempo</p>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div>
+              <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Prospecções vs Conversões</h4>
+              <ResponsiveContainer width="100%" height={220}>
+                <AreaChart data={timelineData}>
+                  <defs>
+                    <linearGradient id="gradProspect" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor={COLORS.info} stopOpacity={0.3} />
+                      <stop offset="95%" stopColor={COLORS.info} stopOpacity={0} />
+                    </linearGradient>
+                    <linearGradient id="gradConvert" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor={COLORS.success} stopOpacity={0.3} />
+                      <stop offset="95%" stopColor={COLORS.success} stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <XAxis dataKey="month" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} />
+                  <YAxis tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: "hsl(var(--card))",
+                      border: "1px solid hsl(var(--border))",
+                      borderRadius: "8px",
+                      fontSize: "12px",
+                    }}
+                  />
+                  <Area type="monotone" dataKey="prospectados" name="Prospectados" stroke={COLORS.info} fill="url(#gradProspect)" strokeWidth={2} />
+                  <Area type="monotone" dataKey="convertidos" name="Convertidos" stroke={COLORS.success} fill="url(#gradConvert)" strokeWidth={2} />
+                  <Area type="monotone" dataKey="perdidos" name="Perdidos" stroke={COLORS.destructive} fill={COLORS.destructive} fillOpacity={0.1} strokeWidth={2} />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+            <div>
+              <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Receita Mensal (Convertida)</h4>
+              <ResponsiveContainer width="100%" height={220}>
+                <BarChart data={timelineData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <XAxis dataKey="month" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} />
+                  <YAxis tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} tickFormatter={(v) => `R$${(v / 1000).toFixed(0)}k`} />
+                  <Tooltip
+                    formatter={(value: number) => [formatCurrency(value), "Receita"]}
+                    contentStyle={{
+                      backgroundColor: "hsl(var(--card))",
+                      border: "1px solid hsl(var(--border))",
+                      borderRadius: "8px",
+                      fontSize: "12px",
+                    }}
+                  />
+                  <Bar dataKey="receita" name="Receita" fill={COLORS.success} radius={[6, 6, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Data quality / enrichment stats */}
       <div className="glass-card p-4 md:p-5">
         <h3 className="font-display text-sm font-semibold text-foreground mb-4">Qualidade dos Dados Prospectados</h3>
