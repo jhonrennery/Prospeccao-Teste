@@ -4,9 +4,10 @@ import { supabase } from "@/integrations/supabase/client";
 import {
   BarChart3, TrendingUp, DollarSign, Users, Target,
   ArrowUpRight, ArrowDownRight, Percent, Phone, Mail,
-  CheckCircle2, XCircle, MessageSquare, Zap,
+  CheckCircle2, XCircle, MessageSquare, Zap, CalendarDays,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, PieChart, Pie, Cell, AreaChart, Area,
