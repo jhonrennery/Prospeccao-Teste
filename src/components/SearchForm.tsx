@@ -394,11 +394,13 @@ export function SearchForm({ onSearch, isLoading }: SearchFormProps) {
             {params.segment && params.location ? (
               <span>
                 Buscando <span className="text-foreground font-medium">{params.segment}</span> em{" "}
-                <span className="text-foreground font-medium">{params.location}</span>
+                <span className="text-foreground font-medium">
+                  {params.location}{params.state && params.state !== "all" ? `, ${params.state}` : ""}
+                </span>
                 {params.radius_km > 0 && <span> ({params.radius_km}km)</span>}
               </span>
             ) : (
-              <span>Preencha segmento e localização</span>
+              <span>Preencha segmento e cidade</span>
             )}
           </div>
 
