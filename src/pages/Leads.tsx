@@ -226,8 +226,10 @@ export default function Leads() {
                       )}
                       {lead.place.phone && (
                         <a
-                          href={`tel:${lead.place.phone}`}
-                          className="flex items-center gap-1 hover:text-foreground transition-colors"
+                          href={`https://wa.me/${lead.place.phone.replace(/\D/g, "")}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 text-primary hover:text-primary/80 underline underline-offset-2 transition-colors"
                         >
                           <Phone className="h-3 w-3 shrink-0" /> {lead.place.phone}
                         </a>
@@ -237,13 +239,13 @@ export default function Leads() {
                           href={lead.place.website.startsWith("http") ? lead.place.website : `https://${lead.place.website}`}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="flex items-center gap-1 hover:text-foreground transition-colors"
+                          className="inline-flex items-center gap-1 text-primary hover:text-primary/80 underline underline-offset-2 transition-colors"
                         >
                           <Globe className="h-3 w-3 shrink-0" />
-                          <span className="truncate max-w-[200px]">
+                          <span className="truncate max-w-[250px]">
                             {lead.place.website.replace(/https?:\/\/(www\.)?/, "").replace(/\/$/, "")}
                           </span>
-                          <ExternalLink className="h-2.5 w-2.5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                          <ExternalLink className="h-2.5 w-2.5" />
                         </a>
                       )}
                     </div>
