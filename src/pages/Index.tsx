@@ -1,14 +1,244 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { SearchForm, type SearchParams } from "@/components/SearchForm";
+import { ResultsTable, type PlaceResult } from "@/components/ResultsTable";
+import { StatsBar } from "@/components/StatsBar";
+import { toast } from "sonner";
 
-const Index = () => {
+export default function Index() {
+  const [results, setResults] = useState<PlaceResult[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [isEnriching, setIsEnriching] = useState(false);
+  const [stats, setStats] = useState({ searches: 0, places: 0, emails: 0, leads: 0 });
+
+  useEffect(() => {
+    loadStats();
+  }, []);
+
+  const loadStats = async () => {
+    const { data: user } = await supabase.auth.getUser();
+    if (!user.user) return;
+
+    const [searchRes, placesRes, enrichRes, leadsRes] = await Promise.all([
+      supabase.from("search_jobs").select("id", { count: "exact", head: true }),
+      supabase.from("places").select("id", { count: "exact", head: true }),
+      supabase.from("place_enrichment").select("id", { count: "exact", head: true }).not("email", "is", null),
+      supabase.from("leads").select("id", { count: "exact", head: true }),
+    ]);
+
+    setStats({
+      searches: searchRes.count || 0,
+      places: placesRes.count || 0,
+      emails: enrichRes.count || 0,
+      leads: leadsRes.count || 0,
+    });
+  };
+
+  const handleSearch = async (params: SearchParams) => {
+    setIsSearching(true);
+    setResults([]);
+
+    try {
+      const { data: userData } = await supabase.auth.getUser();
+      if (!userData.user) {
+        toast.error("Você precisa estar logado.");
+        return;
+      }
+
+      // Create search job
+      const { data: job, error: jobError } = await supabase
+        .from("search_jobs")
+        .insert({
+          user_id: userData.user.id,
+          segment: params.segment,
+          location: params.location,
+          radius_km: params.radius_km,
+          minimum_rating: params.minimum_rating,
+          has_website: params.has_website,
+          max_results: params.max_results,
+          status: "running",
+        })
+        .select()
+        .single();
+
+      if (jobError) throw jobError;
+
+      // Call scraping edge function
+      const { data, error } = await supabase.functions.invoke("scrape-places", {
+        body: {
+          search_job_id: job.id,
+          segment: params.segment,
+          location: params.location,
+          max_results: params.max_results,
+        },
+      });
+
+      if (error) throw error;
+
+      if (data?.places && data.places.length > 0) {
+        // Save places to database
+        const placesToInsert = data.places.map((p: any) => ({
+          search_job_id: job.id,
+          user_id: userData.user!.id,
+          place_id: p.place_id || null,
+          name: p.name,
+          address: p.address,
+          phone: p.phone,
+          website: p.website,
+          rating: p.rating,
+          total_reviews: p.total_reviews,
+          category: p.category,
+          google_maps_url: p.google_maps_url,
+        }));
+
+        const { data: savedPlaces, error: saveError } = await supabase
+          .from("places")
+          .upsert(placesToInsert, { onConflict: "user_id,place_id" })
+          .select();
+
+        if (saveError) throw saveError;
+
+        // Update job
+        await supabase
+          .from("search_jobs")
+          .update({ status: "completed", total_found: savedPlaces?.length || 0 })
+          .eq("id", job.id);
+
+        const mapped: PlaceResult[] = (savedPlaces || []).map((p) => ({
+          id: p.id,
+          name: p.name,
+          address: p.address || undefined,
+          phone: p.phone || undefined,
+          website: p.website || undefined,
+          rating: p.rating ? Number(p.rating) : undefined,
+          total_reviews: p.total_reviews || undefined,
+          category: p.category || undefined,
+          google_maps_url: p.google_maps_url || undefined,
+        }));
+
+        setResults(mapped);
+        toast.success(`${mapped.length} empresas encontradas!`);
+      } else {
+        await supabase
+          .from("search_jobs")
+          .update({ status: "completed", total_found: 0 })
+          .eq("id", job.id);
+        toast.info("Nenhuma empresa encontrada para essa busca.");
+      }
+
+      loadStats();
+    } catch (error: any) {
+      console.error("Search error:", error);
+      toast.error(error.message || "Erro ao buscar empresas");
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  const handleEnrich = async (ids: string[]) => {
+    setIsEnriching(true);
+    try {
+      const placesToEnrich = results.filter((r) => ids.includes(r.id) && r.website);
+
+      if (placesToEnrich.length === 0) {
+        toast.warning("Selecione empresas com website para enriquecer.");
+        return;
+      }
+
+      const { data, error } = await supabase.functions.invoke("enrich-places", {
+        body: {
+          places: placesToEnrich.map((p) => ({ id: p.id, website: p.website })),
+        },
+      });
+
+      if (error) throw error;
+
+      if (data?.results) {
+        const enriched = data.results as Array<{ id: string; email?: string }>;
+        const { data: userData } = await supabase.auth.getUser();
+
+        for (const item of enriched) {
+          if (item.email) {
+            await supabase.from("place_enrichment").insert({
+              place_id: item.id,
+              email: item.email,
+              confidence_score: 0.8,
+              source: "website_scrape",
+              user_id: userData.user!.id,
+            });
+          }
+        }
+
+        setResults((prev) =>
+          prev.map((r) => {
+            const match = enriched.find((e) => e.id === r.id);
+            return match?.email
+              ? { ...r, email: match.email, enrichment_status: "enriched" as const }
+              : r;
+          })
+        );
+
+        const emailCount = enriched.filter((e) => e.email).length;
+        toast.success(`${emailCount} e-mails encontrados!`);
+        loadStats();
+      }
+    } catch (error: any) {
+      console.error("Enrichment error:", error);
+      toast.error(error.message || "Erro ao enriquecer dados");
+    } finally {
+      setIsEnriching(false);
+    }
+  };
+
+  const handleAddToLeads = async (ids: string[]) => {
+    try {
+      const { data: userData } = await supabase.auth.getUser();
+      if (!userData.user) return;
+
+      const leadsToInsert = ids.map((id) => ({
+        place_id: id,
+        user_id: userData.user!.id,
+        status: "new",
+      }));
+
+      const { error } = await supabase.from("leads").insert(leadsToInsert);
+      if (error) throw error;
+
+      setResults((prev) =>
+        prev.map((r) => (ids.includes(r.id) ? { ...r, is_lead: true } : r))
+      );
+
+      toast.success(`${ids.length} leads adicionados!`);
+      loadStats();
+    } catch (error: any) {
+      toast.error(error.message || "Erro ao adicionar leads");
+    }
+  };
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background">
-      <div className="text-center">
-        <h1 className="mb-4 text-4xl font-bold">Welcome to Your Blank App</h1>
-        <p className="text-xl text-muted-foreground">Start building your amazing project here!</p>
+    <div className="space-y-6">
+      <div>
+        <h1 className="font-display text-2xl font-bold text-foreground">Prospecção</h1>
+        <p className="text-sm text-muted-foreground mt-1">
+          Encontre empresas e colete dados de contato automaticamente
+        </p>
       </div>
+
+      <StatsBar
+        totalSearches={stats.searches}
+        totalPlaces={stats.places}
+        totalEmails={stats.emails}
+        totalLeads={stats.leads}
+      />
+
+      <SearchForm onSearch={handleSearch} isLoading={isSearching} />
+
+      <ResultsTable
+        results={results}
+        onAddToLeads={handleAddToLeads}
+        onEnrich={handleEnrich}
+        isEnriching={isEnriching}
+      />
     </div>
   );
-};
-
-export default Index;
+}
