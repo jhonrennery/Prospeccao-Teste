@@ -309,6 +309,7 @@ export default function Leads() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+      </AlertDialog>
+    </>
   );
 }
