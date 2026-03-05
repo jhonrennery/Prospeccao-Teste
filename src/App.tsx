@@ -15,6 +15,7 @@ import Searches from "./pages/Searches";
 import ExportPage from "./pages/Export";
 import KanbanPage from "./pages/Kanban";
 import Dashboard from "./pages/Dashboard";
+import SettingsPage from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 import type { Session } from "@supabase/supabase-js";
 
