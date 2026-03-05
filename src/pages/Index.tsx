@@ -45,13 +45,18 @@ export default function Index() {
         return;
       }
 
+      // Build full location string
+      const fullLocation = params.state && params.state !== "all"
+        ? `${params.location}, ${params.state}`
+        : params.location;
+
       // Create search job
       const { data: job, error: jobError } = await supabase
         .from("search_jobs")
         .insert({
           user_id: userData.user.id,
           segment: params.segment,
-          location: params.location,
+          location: fullLocation,
           radius_km: params.radius_km,
           minimum_rating: params.minimum_rating,
           has_website: params.has_website,
@@ -68,7 +73,7 @@ export default function Index() {
         body: {
           search_job_id: job.id,
           segment: params.segment,
-          location: params.location,
+          location: fullLocation,
           max_results: params.max_results,
           radius_km: params.radius_km,
           keywords_include: params.keywords_include,

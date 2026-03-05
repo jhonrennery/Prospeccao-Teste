@@ -21,11 +21,11 @@ interface SearchFormProps {
 export interface SearchParams {
   segment: string;
   location: string;
+  state: string;
   radius_km: number;
   minimum_rating: number;
   has_website: boolean;
   max_results: number;
-  // New fields
   min_reviews: number;
   has_phone: boolean;
   has_email: boolean;
@@ -36,6 +36,19 @@ export interface SearchParams {
   keywords_exclude: string;
   category_filter: string;
 }
+
+const brazilianStates = [
+  { value: "", label: "Todos" },
+  { value: "AC", label: "AC" }, { value: "AL", label: "AL" }, { value: "AP", label: "AP" },
+  { value: "AM", label: "AM" }, { value: "BA", label: "BA" }, { value: "CE", label: "CE" },
+  { value: "DF", label: "DF" }, { value: "ES", label: "ES" }, { value: "GO", label: "GO" },
+  { value: "MA", label: "MA" }, { value: "MT", label: "MT" }, { value: "MS", label: "MS" },
+  { value: "MG", label: "MG" }, { value: "PA", label: "PA" }, { value: "PB", label: "PB" },
+  { value: "PR", label: "PR" }, { value: "PE", label: "PE" }, { value: "PI", label: "PI" },
+  { value: "RJ", label: "RJ" }, { value: "RN", label: "RN" }, { value: "RS", label: "RS" },
+  { value: "RO", label: "RO" }, { value: "RR", label: "RR" }, { value: "SC", label: "SC" },
+  { value: "SP", label: "SP" }, { value: "SE", label: "SE" }, { value: "TO", label: "TO" },
+];
 
 const segmentSuggestions = [
   "Restaurantes", "Dentistas", "Advogados", "Academias", "Salões de beleza",
@@ -55,6 +68,7 @@ export function SearchForm({ onSearch, isLoading }: SearchFormProps) {
   const [params, setParams] = useState<SearchParams>({
     segment: "",
     location: "",
+    state: "",
     radius_km: 10,
     minimum_rating: 0,
     has_website: false,
@@ -107,7 +121,7 @@ export function SearchForm({ onSearch, isLoading }: SearchFormProps) {
 
       <div className="p-4 md:p-6 space-y-4 md:space-y-5">
         {/* Main inputs */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-4">
           <div className="space-y-2 relative">
             <Label className="text-muted-foreground text-xs uppercase tracking-wider">Segmento</Label>
             <div className="relative">
@@ -147,16 +161,35 @@ export function SearchForm({ onSearch, isLoading }: SearchFormProps) {
           </div>
 
           <div className="space-y-2">
-            <Label className="text-muted-foreground text-xs uppercase tracking-wider">Localização</Label>
+            <Label className="text-muted-foreground text-xs uppercase tracking-wider">Cidade</Label>
             <div className="relative">
               <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Ex: São Paulo, SP"
+                placeholder="Ex: São Paulo"
                 value={params.location}
                 onChange={(e) => setParams((p) => ({ ...p, location: e.target.value }))}
                 className="pl-10 bg-secondary border-border"
               />
             </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label className="text-muted-foreground text-xs uppercase tracking-wider">Estado (UF)</Label>
+            <Select
+              value={params.state}
+              onValueChange={(v) => setParams((p) => ({ ...p, state: v }))}
+            >
+              <SelectTrigger className="bg-secondary border-border">
+                <SelectValue placeholder="Selecione o estado" />
+              </SelectTrigger>
+              <SelectContent>
+                {brazilianStates.map((s) => (
+                  <SelectItem key={s.value || "all"} value={s.value || "all"}>
+                    {s.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         </div>
 
@@ -361,11 +394,13 @@ export function SearchForm({ onSearch, isLoading }: SearchFormProps) {
             {params.segment && params.location ? (
               <span>
                 Buscando <span className="text-foreground font-medium">{params.segment}</span> em{" "}
-                <span className="text-foreground font-medium">{params.location}</span>
+                <span className="text-foreground font-medium">
+                  {params.location}{params.state && params.state !== "all" ? `, ${params.state}` : ""}
+                </span>
                 {params.radius_km > 0 && <span> ({params.radius_km}km)</span>}
               </span>
             ) : (
-              <span>Preencha segmento e localização</span>
+              <span>Preencha segmento e cidade</span>
             )}
           </div>
 
