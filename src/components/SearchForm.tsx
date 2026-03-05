@@ -71,7 +71,7 @@ export function SearchForm({ onSearch, isLoading }: SearchFormProps) {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <Label className="text-muted-foreground text-xs uppercase tracking-wider">Raio</Label>
