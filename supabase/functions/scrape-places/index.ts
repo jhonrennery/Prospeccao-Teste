@@ -9,7 +9,16 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { segment, location, max_results = 50 } = await req.json();
+    const {
+      segment,
+      location,
+      max_results = 50,
+      radius_km = 10,
+      keywords_include = "",
+      keywords_exclude = "",
+      category_filter = "",
+      search_language = "pt",
+    } = await req.json();
 
     if (!segment || !location) {
       return new Response(
@@ -26,9 +35,17 @@ Deno.serve(async (req) => {
       );
     }
 
-    const query = `${segment} em ${location} site:google.com/maps`;
+    // Build a richer search query
+    const parts = [segment];
+    if (category_filter) parts.push(category_filter);
+    if (keywords_include) parts.push(keywords_include);
+    parts.push(location);
+    if (radius_km) parts.push(`raio ${radius_km}km`);
 
-    console.log('Searching with Firecrawl:', query);
+    const query = parts.join(' ');
+    const langMap: Record<string, string> = { pt: 'pt-br', en: 'en', es: 'es' };
+
+    console.log('Searching with Firecrawl:', query, '| lang:', search_language);
 
     // Use Firecrawl search to find businesses
     const searchResponse = await fetch('https://api.firecrawl.dev/v1/search', {
@@ -38,8 +55,9 @@ Deno.serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        query: `${segment} ${location}`,
+        query,
         limit: Math.min(max_results, 20),
+        lang: langMap[search_language] || 'pt-br',
         scrapeOptions: {
           formats: ['markdown'],
         },
