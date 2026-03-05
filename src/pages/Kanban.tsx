@@ -48,6 +48,7 @@ export default function KanbanPage() {
   const [loading, setLoading] = useState(true);
   const [editingValueId, setEditingValueId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState("");
+  const [mapsDialog, setMapsDialog] = useState<{ name: string; url: string } | null>(null);
 
   useEffect(() => {
     loadAll();
