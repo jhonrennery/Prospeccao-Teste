@@ -5,8 +5,13 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel,
+  AlertDialogContent, AlertDialogDescription, AlertDialogFooter,
+  AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   Users, Phone, Globe, MapPin, Star, Trash2,
-  Search, Filter, ExternalLink,
+  Search, ExternalLink,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -41,6 +46,7 @@ export default function Leads() {
   const [loading, setLoading] = useState(true);
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
+  const [mapsDialog, setMapsDialog] = useState<{ name: string; url: string } | null>(null);
 
   useEffect(() => {
     loadLeads();
@@ -114,6 +120,7 @@ export default function Leads() {
   }));
 
   return (
+    <>
     <div className="space-y-5 max-w-5xl">
       {/* Header */}
       <div>
@@ -183,7 +190,18 @@ export default function Leads() {
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <h3 className="font-semibold text-foreground text-sm leading-tight">
+                      <h3
+                        className={`font-semibold text-sm leading-tight ${
+                          lead.place.google_maps_url
+                            ? "text-foreground hover:text-primary cursor-pointer transition-colors"
+                            : "text-foreground"
+                        }`}
+                        onClick={() => {
+                          if (lead.place.google_maps_url) {
+                            setMapsDialog({ name: lead.place.name, url: lead.place.google_maps_url });
+                          }
+                        }}
+                      >
                         {lead.place.name}
                       </h3>
                       {lead.place.category && (
@@ -269,5 +287,28 @@ export default function Leads() {
         </div>
       )}
     </div>
+
+      <AlertDialog open={!!mapsDialog} onOpenChange={(open) => !open && setMapsDialog(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Visitar no Google Meu Negócio?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Deseja abrir a página do Google Meu Negócio de <strong>{mapsDialog?.name}</strong> em uma nova aba?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (mapsDialog?.url) window.open(mapsDialog.url, "_blank", "noopener,noreferrer");
+                setMapsDialog(null);
+              }}
+            >
+              Abrir Google Meu Negócio
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }

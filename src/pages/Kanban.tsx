@@ -4,6 +4,11 @@ import { DragDropContext, Droppable, Draggable, type DropResult } from "@hello-p
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel,
+  AlertDialogContent, AlertDialogDescription, AlertDialogFooter,
+  AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   Phone, Globe, MapPin, Star, Mail, GripVertical,
   Kanban as KanbanIcon, DollarSign, TrendingUp,
 } from "lucide-react";
@@ -21,6 +26,7 @@ interface KanbanItem {
     website: string | null;
     rating: number | null;
     category: string | null;
+    google_maps_url: string | null;
   };
   email?: string | null;
 }
@@ -42,6 +48,7 @@ export default function KanbanPage() {
   const [loading, setLoading] = useState(true);
   const [editingValueId, setEditingValueId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState("");
+  const [mapsDialog, setMapsDialog] = useState<{ name: string; url: string } | null>(null);
 
   useEffect(() => {
     loadAll();
@@ -84,6 +91,7 @@ export default function KanbanPage() {
           website: p.website,
           rating: p.rating ? Number(p.rating) : null,
           category: p.category,
+          google_maps_url: p.google_maps_url,
         },
         email: p.place_enrichment?.[0]?.email || null,
       };
@@ -185,6 +193,7 @@ export default function KanbanPage() {
   }
 
   return (
+    <>
     <div className="space-y-4 md:space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -276,7 +285,18 @@ export default function KanbanPage() {
                                   <GripVertical className="h-4 w-4" />
                                 </div>
                                 <div className="flex-1 min-w-0">
-                                  <div className="font-medium text-sm text-foreground truncate">
+                                  <div
+                                    className={`font-medium text-sm truncate ${
+                                      item.place.google_maps_url
+                                        ? "text-foreground hover:text-primary cursor-pointer transition-colors"
+                                        : "text-foreground"
+                                    }`}
+                                    onClick={() => {
+                                      if (item.place.google_maps_url) {
+                                        setMapsDialog({ name: item.place.name, url: item.place.google_maps_url });
+                                      }
+                                    }}
+                                  >
                                     {item.place.name}
                                   </div>
                                   {item.place.category && (
@@ -383,5 +403,28 @@ export default function KanbanPage() {
         </div>
       </DragDropContext>
     </div>
+
+      <AlertDialog open={!!mapsDialog} onOpenChange={(open) => !open && setMapsDialog(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Visitar no Google Meu Negócio?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Deseja abrir a página do Google Meu Negócio de <strong>{mapsDialog?.name}</strong> em uma nova aba?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (mapsDialog?.url) window.open(mapsDialog.url, "_blank", "noopener,noreferrer");
+                setMapsDialog(null);
+              }}
+            >
+              Abrir Google Meu Negócio
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }
