@@ -121,7 +121,7 @@ export function SearchForm({ onSearch, isLoading }: SearchFormProps) {
 
       <div className="p-4 md:p-6 space-y-4 md:space-y-5">
         {/* Main inputs */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-4">
           <div className="space-y-2 relative">
             <Label className="text-muted-foreground text-xs uppercase tracking-wider">Segmento</Label>
             <div className="relative">
@@ -161,16 +161,35 @@ export function SearchForm({ onSearch, isLoading }: SearchFormProps) {
           </div>
 
           <div className="space-y-2">
-            <Label className="text-muted-foreground text-xs uppercase tracking-wider">Localização</Label>
+            <Label className="text-muted-foreground text-xs uppercase tracking-wider">Cidade</Label>
             <div className="relative">
               <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Ex: São Paulo, SP"
+                placeholder="Ex: São Paulo"
                 value={params.location}
                 onChange={(e) => setParams((p) => ({ ...p, location: e.target.value }))}
                 className="pl-10 bg-secondary border-border"
               />
             </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label className="text-muted-foreground text-xs uppercase tracking-wider">Estado (UF)</Label>
+            <Select
+              value={params.state}
+              onValueChange={(v) => setParams((p) => ({ ...p, state: v }))}
+            >
+              <SelectTrigger className="bg-secondary border-border">
+                <SelectValue placeholder="Selecione o estado" />
+              </SelectTrigger>
+              <SelectContent>
+                {brazilianStates.map((s) => (
+                  <SelectItem key={s.value || "all"} value={s.value || "all"}>
+                    {s.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         </div>
 
