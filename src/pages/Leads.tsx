@@ -135,7 +135,7 @@ export default function Leads() {
                       <Badge variant="secondary" className="text-[10px]">{lead.place.category}</Badge>
                     )}
                   </div>
-                  <div className="flex items-center gap-4 mt-1 text-xs text-muted-foreground">
+                  <div className="flex flex-wrap items-center gap-2 md:gap-4 mt-1 text-xs text-muted-foreground">
                     {lead.place.address && (
                       <span className="flex items-center gap-1"><MapPin className="h-3 w-3" /> {lead.place.address}</span>
                     )}
