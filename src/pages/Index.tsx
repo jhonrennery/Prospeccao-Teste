@@ -103,13 +103,46 @@ export default function Index() {
 
         if (saveError) throw saveError;
 
+        // Client-side filtering based on params
+        let filtered = savedPlaces || [];
+
+        if (params.minimum_rating > 0) {
+          filtered = filtered.filter((p) => p.rating && Number(p.rating) >= params.minimum_rating);
+        }
+        if (params.min_reviews > 0) {
+          filtered = filtered.filter((p) => p.total_reviews && p.total_reviews >= params.min_reviews);
+        }
+        if (params.has_website) {
+          filtered = filtered.filter((p) => p.website);
+        }
+        if (params.has_phone) {
+          filtered = filtered.filter((p) => p.phone);
+        }
+
+        // Exclude already prospected
+        if (params.exclude_already_prospected) {
+          const { data: existingPlaces } = await supabase
+            .from("places")
+            .select("place_id")
+            .neq("search_job_id", job.id);
+          const existingIds = new Set((existingPlaces || []).map((p) => p.place_id));
+          filtered = filtered.filter((p) => !p.place_id || !existingIds.has(p.place_id));
+        }
+
+        // Sort
+        if (params.sort_by === "rating") {
+          filtered.sort((a, b) => (Number(b.rating) || 0) - (Number(a.rating) || 0));
+        } else if (params.sort_by === "reviews") {
+          filtered.sort((a, b) => (b.total_reviews || 0) - (a.total_reviews || 0));
+        }
+
         // Update job
         await supabase
           .from("search_jobs")
-          .update({ status: "completed", total_found: savedPlaces?.length || 0 })
+          .update({ status: "completed", total_found: filtered.length })
           .eq("id", job.id);
 
-        const mapped: PlaceResult[] = (savedPlaces || []).map((p) => ({
+        const mapped: PlaceResult[] = filtered.map((p) => ({
           id: p.id,
           name: p.name,
           address: p.address || undefined,
