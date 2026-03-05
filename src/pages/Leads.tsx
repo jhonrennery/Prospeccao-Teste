@@ -127,7 +127,7 @@ export default function Leads() {
           {filtered.map((lead) => {
             const statusInfo = statusOptions.find((s) => s.value === lead.status);
             return (
-              <div key={lead.id} className="glass-card p-4 flex items-center justify-between animate-slide-in">
+              <div key={lead.id} className="glass-card p-3 md:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-0 animate-slide-in">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     <span className="font-medium text-foreground">{lead.place.name}</span>
