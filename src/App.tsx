@@ -42,6 +42,7 @@ function AuthenticatedLayout() {
           <Route path="/export" element={<ExportPage />} />
           <Route path="/kanban" element={<KanbanPage />} />
           <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/settings" element={<SettingsPage />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </main>
