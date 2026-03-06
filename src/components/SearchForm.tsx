@@ -54,11 +54,133 @@ const brazilianStates = [
   { value: "SP", label: "SP" }, { value: "SE", label: "SE" }, { value: "TO", label: "TO" },
 ];
 
-const segmentSuggestions = [
-  "Restaurantes", "Dentistas", "Advogados", "Academias", "Salões de beleza",
-  "Clínicas médicas", "Imobiliárias", "Contadores", "Pet shops", "Oficinas mecânicas",
-  "Escolas", "Hotéis", "Farmácias", "Padarias", "Lojas de roupas",
-];
+const segmentCategories: Record<string, string[]> = {
+  "Saúde": [
+    "Dentistas", "Clínicas médicas", "Clínicas odontológicas", "Médicos", "Psicólogos",
+    "Fisioterapeutas", "Nutricionistas", "Fonoaudiólogos", "Oftalmologistas", "Dermatologistas",
+    "Ortopedistas", "Cardiologistas", "Ginecologistas", "Pediatras", "Urologistas",
+    "Psiquiatras", "Veterinários", "Clínicas veterinárias", "Laboratórios de análises",
+    "Clínicas de estética", "Farmácias", "Drogarias", "Óticas", "Hospitais",
+    "Clínicas de reabilitação", "Acupunturistas", "Quiropratas", "Terapeutas ocupacionais",
+    "Clínicas de fertilização", "Homeopatas", "Podólogos",
+  ],
+  "Alimentação": [
+    "Restaurantes", "Padarias", "Confeitarias", "Pizzarias", "Lanchonetes",
+    "Hamburguerias", "Churrascarias", "Sorveterias", "Cafeterias", "Bares",
+    "Distribuidoras de bebidas", "Açaiterias", "Docerias", "Food trucks",
+    "Restaurantes japoneses", "Restaurantes italianos", "Restaurantes árabes",
+    "Casas de açaí", "Buffets", "Marmitarias", "Sushi bars", "Tapiocarias",
+    "Pastelarias", "Casas de bolos", "Empórios", "Delicatessens",
+  ],
+  "Beleza e Estética": [
+    "Salões de beleza", "Barbearias", "Clínicas de estética", "Estúdios de sobrancelha",
+    "Estúdios de unhas", "Depilação", "Centros de bronzeamento", "Cabeleireiros",
+    "Maquiadores", "Spas", "Estúdios de micropigmentação", "Estúdios de extensão de cílios",
+    "Design de sobrancelhas", "Estúdios de tatuagem", "Estúdios de piercing",
+  ],
+  "Educação": [
+    "Escolas", "Faculdades", "Cursos de idiomas", "Escolas de música", "Autoescolas",
+    "Cursos profissionalizantes", "Creches", "Escolas infantis", "Pré-vestibulares",
+    "Escolas de informática", "Escolas de dança", "Escolas de natação",
+    "Cursos técnicos", "Reforço escolar", "Professores particulares",
+    "Escolas de artes marciais", "Universidades", "Cursos online",
+  ],
+  "Jurídico": [
+    "Advogados", "Escritórios de advocacia", "Advogados trabalhistas", "Advogados criminalistas",
+    "Advogados de família", "Advogados tributaristas", "Advogados imobiliários",
+    "Advogados previdenciários", "Advogados empresariais", "Cartórios",
+    "Despachantes", "Mediadores", "Consultoria jurídica",
+  ],
+  "Contabilidade e Finanças": [
+    "Contadores", "Escritórios de contabilidade", "Consultores financeiros",
+    "Corretoras de seguros", "Assessoria de investimentos", "Cooperativas de crédito",
+    "Correspondentes bancários", "Consultoria empresarial", "Auditores",
+    "Peritos contábeis", "Administradoras de consórcios",
+  ],
+  "Construção e Imóveis": [
+    "Imobiliárias", "Construtoras", "Arquitetos", "Engenheiros civis",
+    "Lojas de materiais de construção", "Marmorarias", "Vidraçarias", "Serralheiras",
+    "Pintores", "Eletricistas", "Encanadores", "Pedreiros", "Decoradores de interiores",
+    "Paisagistas", "Corretores de imóveis", "Administradoras de condomínios",
+    "Empresas de reformas", "Gesseiros", "Marcenarias", "Madeireiras",
+  ],
+  "Tecnologia": [
+    "Assistência técnica de celulares", "Assistência técnica de computadores",
+    "Lojas de informática", "Desenvolvimento de software", "Agências digitais",
+    "Agências de marketing digital", "Consultoria em TI", "Web designers",
+    "Provedores de internet", "Lojas de eletrônicos", "Empresas de segurança eletrônica",
+    "Automação residencial", "Suporte técnico", "Data centers",
+  ],
+  "Automotivo": [
+    "Oficinas mecânicas", "Auto elétricas", "Funilaria e pintura", "Autopeças",
+    "Borracharias", "Lava-jatos", "Concessionárias", "Estacionamentos",
+    "Locadoras de veículos", "Despachantes veiculares", "Seguros de automóveis",
+    "Som automotivo", "Chaveiros automotivos", "Guincho", "Envelopamento veicular",
+    "Centros automotivos", "Retíficas de motores",
+  ],
+  "Comércio e Varejo": [
+    "Lojas de roupas", "Lojas de calçados", "Lojas de acessórios", "Joalherias",
+    "Papelarias", "Livrarias", "Lojas de brinquedos", "Lojas de cosméticos",
+    "Supermercados", "Minimercados", "Atacadistas", "Lojas de presentes",
+    "Floriculturas", "Lojas de artigos esportivos", "Lojas de móveis",
+    "Lojas de eletrodomésticos", "Lojas de artigos para festas", "Lojas de tecidos",
+    "Lojas de artigos religiosos", "Sex shops", "Lojas de produtos naturais",
+    "Tabacarias", "Antiquários", "Bazares", "Boutiques",
+  ],
+  "Serviços Gerais": [
+    "Chaveiros", "Dedetizadoras", "Empresas de limpeza", "Lavanderias",
+    "Empresas de mudanças", "Empresas de desentupimento", "Empresas de impermeabilização",
+    "Jardinagem", "Motoboys", "Transportadoras", "Gráficas", "Copiadoras",
+    "Costureiras e alfaiates", "Fotógrafos", "Vidraceiros", "Caçambas",
+    "Serviços de portaria", "Empresas de segurança patrimonial",
+  ],
+  "Fitness e Esportes": [
+    "Academias", "Estúdios de pilates", "Estúdios de yoga", "Crossfit",
+    "Personal trainers", "Escolas de lutas", "Escolas de natação", "Campos de futebol",
+    "Quadras esportivas", "Centros esportivos", "Lojas de suplementos",
+    "Estúdios de funcional", "Escolas de tênis", "Clubes recreativos",
+  ],
+  "Turismo e Hospedagem": [
+    "Hotéis", "Pousadas", "Hostels", "Agências de viagem", "Guias turísticos",
+    "Resorts", "Casas de temporada", "Motéis", "Parques aquáticos",
+    "Empresas de turismo", "Receptivos turísticos", "Campings",
+  ],
+  "Eventos e Entretenimento": [
+    "Buffets", "Casas de festas", "DJs", "Bandas e músicos", "Decoradores de eventos",
+    "Organizadores de eventos", "Cerimonialistas", "Locação de som e iluminação",
+    "Locação de brinquedos", "Espaços para eventos", "Casas noturnas",
+    "Cinemas", "Teatros", "Parques de diversão", "Escape rooms",
+  ],
+  "Pet e Animais": [
+    "Pet shops", "Clínicas veterinárias", "Banho e tosa", "Hotéis para pets",
+    "Adestradores", "Dog walkers", "Lojas de aquários", "Agropecuárias",
+    "Criadores de cães", "Pet sitters",
+  ],
+  "Comunicação e Marketing": [
+    "Agências de publicidade", "Assessoria de imprensa", "Produtoras de vídeo",
+    "Estúdios de fotografia", "Agências de marketing", "Gráficas",
+    "Empresas de comunicação visual", "Promotores de vendas", "Influenciadores digitais",
+    "Estúdios de podcast", "Agências de social media",
+  ],
+  "Indústria": [
+    "Metalúrgicas", "Indústrias alimentícias", "Fábricas de móveis", "Confecções",
+    "Indústrias têxteis", "Indústrias químicas", "Indústrias de plásticos",
+    "Indústrias de embalagens", "Tornearias", "Caldeirarias", "Fundições",
+  ],
+  "Agronegócio": [
+    "Agropecuárias", "Lojas de insumos agrícolas", "Consultoria agrícola",
+    "Veterinários rurais", "Cooperativas agrícolas", "Silos e armazéns",
+    "Máquinas agrícolas", "Sementes e mudas", "Irrigação",
+  ],
+  "Religião e Espiritualidade": [
+    "Igrejas", "Templos", "Centros espíritas", "Terreiros", "Sinagogas",
+    "Mesquitas", "Lojas de artigos religiosos", "Terapeutas holísticos",
+  ],
+};
+
+const segmentSuggestions = Object.entries(segmentCategories).flatMap(
+  ([, items]) => items
+);
 
 const languageOptions = [
   { value: "pt", label: "Português" },
@@ -170,23 +292,57 @@ export function SearchForm({ onSearch, isLoading }: SearchFormProps) {
               />
             </div>
             {showSuggestions && (
-              <div className="absolute z-20 top-full mt-1 w-full bg-popover border border-border rounded-md shadow-lg max-h-40 overflow-y-auto">
-                {segmentSuggestions
-                  .filter((s) => s.toLowerCase().includes(params.segment.toLowerCase()))
-                  .slice(0, 6)
-                  .map((s) => (
-                    <button
-                      key={s}
-                      type="button"
-                      className="w-full text-left px-3 py-2 text-sm text-foreground hover:bg-secondary transition-colors"
-                      onMouseDown={() => {
-                        setParams((p) => ({ ...p, segment: s }));
-                        setShowSuggestions(false);
-                      }}
-                    >
-                      {s}
-                    </button>
-                  ))}
+              <div className="absolute z-20 top-full mt-1 w-full bg-popover border border-border rounded-md shadow-lg max-h-72 overflow-y-auto">
+                {params.segment.trim().length === 0 ? (
+                  // Show categories when input is empty
+                  Object.entries(segmentCategories).map(([category, items]) => (
+                    <div key={category}>
+                      <div className="px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground bg-secondary/50 sticky top-0">
+                        {category}
+                      </div>
+                      {items.slice(0, 5).map((s) => (
+                        <button
+                          key={s}
+                          type="button"
+                          className="w-full text-left px-3 py-2 text-sm text-foreground hover:bg-secondary transition-colors"
+                          onMouseDown={() => {
+                            setParams((p) => ({ ...p, segment: s }));
+                            setShowSuggestions(false);
+                          }}
+                        >
+                          {s}
+                        </button>
+                      ))}
+                    </div>
+                  ))
+                ) : (
+                  // Filter across all segments when typing
+                  (() => {
+                    const query = params.segment.toLowerCase();
+                    const matches: { category: string; item: string }[] = [];
+                    for (const [cat, items] of Object.entries(segmentCategories)) {
+                      for (const item of items) {
+                        if (item.toLowerCase().includes(query)) {
+                          matches.push({ category: cat, item });
+                        }
+                      }
+                    }
+                    return matches.slice(0, 12).map(({ category, item }) => (
+                      <button
+                        key={item}
+                        type="button"
+                        className="w-full text-left px-3 py-2 text-sm text-foreground hover:bg-secondary transition-colors flex items-center justify-between"
+                        onMouseDown={() => {
+                          setParams((p) => ({ ...p, segment: item }));
+                          setShowSuggestions(false);
+                        }}
+                      >
+                        <span>{item}</span>
+                        <span className="text-[10px] text-muted-foreground">{category}</span>
+                      </button>
+                    ));
+                  })()
+                )}
               </div>
             )}
           </div>
