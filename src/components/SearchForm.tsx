@@ -343,7 +343,6 @@ export function SearchForm({ onSearch, isLoading }: SearchFormProps) {
                     ));
                   })()
                 )}
-                  ))}
               </div>
             )}
           </div>
