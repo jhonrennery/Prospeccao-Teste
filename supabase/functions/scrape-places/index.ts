@@ -19,8 +19,8 @@ function generatePlaceId(): string {
   return `gm_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 }
 
-function cleanNullish(val: any): string | null {
-  if (!val || val === 'null' || val === 'undefined' || val === 'N/A' || val === 'n/a') return null;
+function cleanVal(val: any): string | null {
+  if (!val || val === 'null' || val === 'undefined' || val === 'N/A') return null;
   return String(val).trim();
 }
 
@@ -34,7 +34,6 @@ Deno.serve(async (req) => {
       segment,
       location,
       max_results = 50,
-      radius_km = 10,
       keywords_include = "",
       keywords_exclude = "",
       category_filter = "",
@@ -49,259 +48,204 @@ Deno.serve(async (req) => {
     }
 
     const apiKey = Deno.env.get('FIRECRAWL_API_KEY');
-    if (!apiKey) {
-      return new Response(
-        JSON.stringify({ error: 'FIRECRAWL_API_KEY not configured' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
     const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
-    if (!lovableApiKey) {
+    if (!apiKey || !lovableApiKey) {
       return new Response(
-        JSON.stringify({ error: 'LOVABLE_API_KEY not configured' }),
+        JSON.stringify({ error: 'Missing API keys' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Build search queries
-    const baseQuery = category_filter 
-      ? `${segment} ${category_filter} ${location}`
-      : `${segment} ${location}`;
+    const query = [segment, category_filter, keywords_include, location]
+      .filter(Boolean).join(' ');
 
-    // Run multiple search queries in parallel to get more diverse content
-    const searchQueries = [
-      `${baseQuery} endereço telefone avaliações`,
-      `${baseQuery} Google Maps avaliações`,
-      `melhores ${baseQuery} telefone contato`,
-    ];
+    console.log('Searching:', query);
 
-    console.log('Running parallel searches for:', baseQuery);
+    // Single Firecrawl search with scrape to get content
+    const searchResp = await fetch('https://api.firecrawl.dev/v1/search', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        query: `${query} endereço telefone avaliações Google`,
+        limit: 8,
+        lang: search_language === 'pt' ? 'pt-br' : search_language,
+        country: 'BR',
+        scrapeOptions: { formats: ['markdown'], onlyMainContent: true },
+      }),
+    });
 
-    const searchPromises = searchQueries.map(query =>
-      fetch('https://api.firecrawl.dev/v1/search', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${apiKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          query,
-          limit: 5,
-          lang: search_language === 'pt' ? 'pt-br' : search_language,
-          country: 'BR',
-          scrapeOptions: {
-            formats: ['markdown'],
-            onlyMainContent: true,
-          },
-        }),
-      }).then(r => r.json()).catch(() => null)
-    );
+    const searchData = await searchResp.json();
+    console.log('Search status:', searchResp.status);
 
-    const searchResults = await Promise.all(searchPromises);
-    
-    // Collect all scraped content
-    const allContent: string[] = [];
-    const seenUrls = new Set<string>();
+    if (!searchResp.ok) {
+      console.error('Search error:', JSON.stringify(searchData));
+      return new Response(
+        JSON.stringify({ error: 'Search failed' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
-    for (const searchData of searchResults) {
-      if (!searchData?.data) continue;
-      for (const result of searchData.data) {
-        const url = result.url || '';
-        if (seenUrls.has(url)) continue;
-        seenUrls.add(url);
-        
-        const md = result.markdown || '';
-        const desc = result.description || '';
-        const title = result.title || '';
-        
-        if (md.length > 100) {
-          allContent.push(`## Page: ${title}\nURL: ${url}\n\n${md.slice(0, 4000)}`);
-        } else if (desc.length > 30) {
-          allContent.push(`## Page: ${title}\nURL: ${url}\n\n${desc}`);
+    // Collect content (limit to avoid token overflow)
+    const contentParts: string[] = [];
+    if (searchData?.data) {
+      for (const r of searchData.data) {
+        const md = r.markdown || r.description || '';
+        if (md.length > 50) {
+          contentParts.push(md.slice(0, 3000));
         }
       }
     }
 
-    console.log(`Collected content from ${allContent.length} pages`);
+    console.log(`Collected ${contentParts.length} pages of content`);
 
-    if (allContent.length === 0) {
+    if (contentParts.length === 0) {
       return new Response(
         JSON.stringify({ success: true, places: [] }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Use AI to extract individual businesses from the combined content
-    const combinedContent = allContent.join('\n\n---\n\n').slice(0, 20000);
-    console.log('Sending to AI for extraction, content length:', combinedContent.length);
+    const content = contentParts.join('\n---\n').slice(0, 15000);
 
-    const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+    // AI extraction
+    console.log('AI extraction, content:', content.length, 'chars');
+
+    const aiResp = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${lovableApiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
+        model: 'google/gemini-2.5-flash-lite',
         messages: [
           {
             role: 'system',
-            content: `Você é um especialista em extração de dados de empresas do Google Meu Negócio (Google My Business).
-
-REGRAS OBRIGATÓRIAS:
-1. Extraia APENAS empresas REAIS que existem fisicamente - estabelecimentos com CNPJ, endereço real
-2. NÃO inclua: nomes de artigos, blogs, sites agregadores (TripAdvisor, Yelp, iFood, Rappi)
-3. NÃO inclua: listas "top 10", "melhores", "guias", "onde comer"
-4. Cada empresa deve ter pelo menos o nome
-5. Telefone deve estar em formato brasileiro: (XX) XXXX-XXXX ou (XX) XXXXX-XXXX
-6. Rating deve ser um número de 1.0 a 5.0
-7. Se um campo não está disponível, omita-o do resultado (não use "null" como texto)
-8. Extraia o máximo possível de empresas REAIS mencionadas no conteúdo
-9. Priorize empresas que tenham endereço ou telefone mencionados`,
+            content: `Extraia empresas REAIS (Google Meu Negócio) do conteúdo. Apenas estabelecimentos físicos com CNPJ. Ignore nomes de artigos, blogs, listas "top 10", sites agregadores. Telefone em formato (XX) XXXXX-XXXX. Se dado não existe, omita o campo.`,
           },
           {
             role: 'user',
-            content: `Extraia todas as empresas reais do tipo "${segment}" localizadas em "${location}" mencionadas neste conteúdo. Retorne até ${max_results} empresas:\n\n${combinedContent}`,
+            content: `Extraia até ${max_results} "${segment}" de "${location}":\n\n${content}`,
           },
         ],
-        tools: [
-          {
-            type: 'function',
-            function: {
-              name: 'extract_businesses',
-              description: 'Retorna lista de empresas reais extraídas do conteúdo',
-              parameters: {
-                type: 'object',
-                properties: {
-                  businesses: {
-                    type: 'array',
-                    items: {
-                      type: 'object',
-                      properties: {
-                        name: { type: 'string', description: 'Nome da empresa' },
-                        address: { type: 'string', description: 'Endereço completo' },
-                        phone: { type: 'string', description: 'Telefone no formato (XX) XXXXX-XXXX' },
-                        website: { type: 'string', description: 'URL do site da empresa (não agregadores)' },
-                        rating: { type: 'number', description: 'Nota de 1.0 a 5.0' },
-                        total_reviews: { type: 'number', description: 'Número total de avaliações' },
-                        category: { type: 'string', description: 'Categoria/tipo do negócio' },
-                      },
-                      required: ['name'],
-                      additionalProperties: false,
+        tools: [{
+          type: 'function',
+          function: {
+            name: 'extract_businesses',
+            description: 'Lista de empresas reais extraídas',
+            parameters: {
+              type: 'object',
+              properties: {
+                businesses: {
+                  type: 'array',
+                  items: {
+                    type: 'object',
+                    properties: {
+                      name: { type: 'string' },
+                      address: { type: 'string' },
+                      phone: { type: 'string' },
+                      website: { type: 'string' },
+                      rating: { type: 'number' },
+                      total_reviews: { type: 'number' },
+                      category: { type: 'string' },
                     },
+                    required: ['name'],
+                    additionalProperties: false,
                   },
                 },
-                required: ['businesses'],
-                additionalProperties: false,
               },
+              required: ['businesses'],
+              additionalProperties: false,
             },
           },
-        ],
+        }],
         tool_choice: { type: 'function', function: { name: 'extract_businesses' } },
       }),
     });
 
-    if (!aiResponse.ok) {
-      const errText = await aiResponse.text();
-      console.error('AI error:', aiResponse.status, errText);
-      
-      if (aiResponse.status === 429) {
-        return new Response(
-          JSON.stringify({ error: 'Limite de requisições excedido. Tente novamente em instantes.' }),
-          { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-      if (aiResponse.status === 402) {
-        return new Response(
-          JSON.stringify({ error: 'Créditos de IA esgotados.' }),
-          { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-      
+    if (!aiResp.ok) {
+      const errText = await aiResp.text();
+      console.error('AI error:', aiResp.status, errText);
+      const status = aiResp.status;
+      const msg = status === 429 ? 'Limite de requisições excedido' 
+                : status === 402 ? 'Créditos de IA esgotados'
+                : 'Falha na extração';
       return new Response(
-        JSON.stringify({ error: 'Falha na extração por IA' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ error: msg }),
+        { status: status >= 400 && status < 500 ? status : 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    const aiData = await aiResponse.json();
+    const aiData = await aiResp.json();
     let businesses: any[] = [];
 
     const toolCall = aiData?.choices?.[0]?.message?.tool_calls?.[0];
     if (toolCall?.function?.arguments) {
       try {
-        const parsed = JSON.parse(toolCall.function.arguments);
-        businesses = parsed.businesses || [];
+        businesses = JSON.parse(toolCall.function.arguments).businesses || [];
       } catch (e) {
-        console.error('Failed to parse AI response:', e);
+        console.error('Parse error:', e);
       }
     }
 
     console.log(`AI extracted ${businesses.length} businesses`);
 
-    // Convert to PlaceData and clean
+    // Clean and deduplicate
     const places: PlaceData[] = [];
-    const seenNames = new Set<string>();
+    const seen = new Set<string>();
 
     for (const biz of businesses) {
-      const name = cleanNullish(biz.name);
-      if (!name || name.length < 2) continue;
-      
-      const normalizedName = name.toLowerCase();
-      if (seenNames.has(normalizedName)) continue;
-      seenNames.add(normalizedName);
+      const name = cleanVal(biz.name);
+      if (!name || name.length < 2 || seen.has(name.toLowerCase())) continue;
+      seen.add(name.toLowerCase());
 
       let rating = biz.rating ? Number(biz.rating) : null;
       if (rating && (rating < 1 || rating > 5)) rating = null;
 
-      let totalReviews = biz.total_reviews ? Number(biz.total_reviews) : null;
-      if (totalReviews && totalReviews < 0) totalReviews = null;
-
-      let website = cleanNullish(biz.website);
-      if (website) {
-        if (/(tripadvisor|yelp|foursquare|facebook\.com|instagram\.com|youtube|google\.com|ifood|rappi)/i.test(website)) {
-          website = null;
-        } else if (!website.startsWith('http')) {
-          website = `https://${website}`;
-        }
+      let website = cleanVal(biz.website);
+      if (website && /(tripadvisor|yelp|facebook\.com|instagram\.com|youtube|google\.com|ifood|rappi)/i.test(website)) {
+        website = null;
       }
+      if (website && !website.startsWith('http')) website = `https://${website}`;
 
-      let phone = cleanNullish(biz.phone);
+      let phone = cleanVal(biz.phone);
       if (phone) {
-        const cleaned = phone.replace(/\D/g, '');
-        if (cleaned.length < 8 || cleaned.length > 13) phone = null;
+        const digits = phone.replace(/\D/g, '');
+        if (digits.length < 8 || digits.length > 13) phone = null;
       }
 
       places.push({
         place_id: generatePlaceId(),
         name,
-        address: cleanNullish(biz.address),
+        address: cleanVal(biz.address),
         phone,
         website,
         rating,
-        total_reviews: totalReviews,
-        category: cleanNullish(biz.category) || segment,
+        total_reviews: biz.total_reviews > 0 ? Number(biz.total_reviews) : null,
+        category: cleanVal(biz.category) || segment,
         google_maps_url: null,
       });
 
       if (places.length >= max_results) break;
     }
 
-    // Apply keyword exclusion
-    let finalPlaces = places;
+    // Keyword exclusion
+    let final = places;
     if (keywords_exclude) {
-      const excludeWords = keywords_exclude.split(',').map(w => w.trim().toLowerCase()).filter(Boolean);
-      finalPlaces = finalPlaces.filter(p => {
-        const text = `${p.name} ${p.address || ''} ${p.category}`.toLowerCase();
-        return !excludeWords.some(w => text.includes(w));
+      const excl = keywords_exclude.split(',').map(w => w.trim().toLowerCase()).filter(Boolean);
+      final = final.filter(p => {
+        const t = `${p.name} ${p.address || ''}`.toLowerCase();
+        return !excl.some(w => t.includes(w));
       });
     }
 
-    console.log(`Returning ${finalPlaces.length} businesses`);
+    console.log(`Returning ${final.length} businesses`);
 
     return new Response(
-      JSON.stringify({ success: true, places: finalPlaces }),
+      JSON.stringify({ success: true, places: final }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (error) {
