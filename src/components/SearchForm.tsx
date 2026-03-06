@@ -292,22 +292,57 @@ export function SearchForm({ onSearch, isLoading }: SearchFormProps) {
               />
             </div>
             {showSuggestions && (
-              <div className="absolute z-20 top-full mt-1 w-full bg-popover border border-border rounded-md shadow-lg max-h-40 overflow-y-auto">
-                {segmentSuggestions
-                  .filter((s) => s.toLowerCase().includes(params.segment.toLowerCase()))
-                  .slice(0, 6)
-                  .map((s) => (
-                    <button
-                      key={s}
-                      type="button"
-                      className="w-full text-left px-3 py-2 text-sm text-foreground hover:bg-secondary transition-colors"
-                      onMouseDown={() => {
-                        setParams((p) => ({ ...p, segment: s }));
-                        setShowSuggestions(false);
-                      }}
-                    >
-                      {s}
-                    </button>
+              <div className="absolute z-20 top-full mt-1 w-full bg-popover border border-border rounded-md shadow-lg max-h-72 overflow-y-auto">
+                {params.segment.trim().length === 0 ? (
+                  // Show categories when input is empty
+                  Object.entries(segmentCategories).map(([category, items]) => (
+                    <div key={category}>
+                      <div className="px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground bg-secondary/50 sticky top-0">
+                        {category}
+                      </div>
+                      {items.slice(0, 5).map((s) => (
+                        <button
+                          key={s}
+                          type="button"
+                          className="w-full text-left px-3 py-2 text-sm text-foreground hover:bg-secondary transition-colors"
+                          onMouseDown={() => {
+                            setParams((p) => ({ ...p, segment: s }));
+                            setShowSuggestions(false);
+                          }}
+                        >
+                          {s}
+                        </button>
+                      ))}
+                    </div>
+                  ))
+                ) : (
+                  // Filter across all segments when typing
+                  (() => {
+                    const query = params.segment.toLowerCase();
+                    const matches: { category: string; item: string }[] = [];
+                    for (const [cat, items] of Object.entries(segmentCategories)) {
+                      for (const item of items) {
+                        if (item.toLowerCase().includes(query)) {
+                          matches.push({ category: cat, item });
+                        }
+                      }
+                    }
+                    return matches.slice(0, 12).map(({ category, item }) => (
+                      <button
+                        key={item}
+                        type="button"
+                        className="w-full text-left px-3 py-2 text-sm text-foreground hover:bg-secondary transition-colors flex items-center justify-between"
+                        onMouseDown={() => {
+                          setParams((p) => ({ ...p, segment: item }));
+                          setShowSuggestions(false);
+                        }}
+                      >
+                        <span>{item}</span>
+                        <span className="text-[10px] text-muted-foreground">{category}</span>
+                      </button>
+                    ));
+                  })()
+                )}
                   ))}
               </div>
             )}
