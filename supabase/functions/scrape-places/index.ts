@@ -19,6 +19,11 @@ function generatePlaceId(): string {
   return `gm_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 }
 
+function cleanNullish(val: any): string | null {
+  if (!val || val === 'null' || val === 'undefined' || val === 'N/A' || val === 'n/a') return null;
+  return String(val).trim();
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -59,59 +64,61 @@ Deno.serve(async (req) => {
       );
     }
 
-    // ===== STRATEGY =====
-    // 1. Use Firecrawl search to find pages that LIST businesses (TripAdvisor, blogs, etc.)
-    // 2. Scrape the top results to get full content with business names, ratings, etc.
-    // 3. Use AI to extract individual businesses from the scraped content
-    // 4. Return clean, structured business data
+    // Build search queries
+    const baseQuery = category_filter 
+      ? `${segment} ${category_filter} ${location}`
+      : `${segment} ${location}`;
 
-    const queryParts = [segment];
-    if (category_filter) queryParts.push(category_filter);
-    if (keywords_include) queryParts.push(keywords_include);
-    queryParts.push(location);
+    // Run multiple search queries in parallel to get more diverse content
+    const searchQueries = [
+      `${baseQuery} endereço telefone avaliações`,
+      `${baseQuery} Google Maps avaliações`,
+      `melhores ${baseQuery} telefone contato`,
+    ];
 
-    const searchQuery = queryParts.join(' ');
+    console.log('Running parallel searches for:', baseQuery);
 
-    // Step 1: Search for pages listing businesses
-    console.log('Searching for business listings:', searchQuery);
-
-    const searchResponse = await fetch('https://api.firecrawl.dev/v1/search', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        query: `${searchQuery} telefone endereço avaliações Google`,
-        limit: 10,
-        lang: search_language === 'pt' ? 'pt-br' : search_language,
-        country: 'BR',
-        scrapeOptions: {
-          formats: ['markdown'],
-          onlyMainContent: true,
+    const searchPromises = searchQueries.map(query =>
+      fetch('https://api.firecrawl.dev/v1/search', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+          'Content-Type': 'application/json',
         },
-      }),
-    });
+        body: JSON.stringify({
+          query,
+          limit: 5,
+          lang: search_language === 'pt' ? 'pt-br' : search_language,
+          country: 'BR',
+          scrapeOptions: {
+            formats: ['markdown'],
+            onlyMainContent: true,
+          },
+        }),
+      }).then(r => r.json()).catch(() => null)
+    );
 
-    const searchData = await searchResponse.json();
-    console.log('Search status:', searchResponse.status);
-
-    if (!searchResponse.ok) {
-      console.error('Search error:', JSON.stringify(searchData));
-      return new Response(
-        JSON.stringify({ error: 'Search failed' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // Step 2: Collect all scraped content
+    const searchResults = await Promise.all(searchPromises);
+    
+    // Collect all scraped content
     const allContent: string[] = [];
+    const seenUrls = new Set<string>();
 
-    if (searchData?.data) {
+    for (const searchData of searchResults) {
+      if (!searchData?.data) continue;
       for (const result of searchData.data) {
-        const md = result.markdown || result.description || '';
-        if (md.length > 50) {
-          allContent.push(md.slice(0, 3000)); // Limit per result to avoid token overflow
+        const url = result.url || '';
+        if (seenUrls.has(url)) continue;
+        seenUrls.add(url);
+        
+        const md = result.markdown || '';
+        const desc = result.description || '';
+        const title = result.title || '';
+        
+        if (md.length > 100) {
+          allContent.push(`## Page: ${title}\nURL: ${url}\n\n${md.slice(0, 4000)}`);
+        } else if (desc.length > 30) {
+          allContent.push(`## Page: ${title}\nURL: ${url}\n\n${desc}`);
         }
       }
     }
@@ -125,9 +132,8 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Step 3: Use AI to extract individual businesses
-    const combinedContent = allContent.join('\n\n---PAGE BREAK---\n\n').slice(0, 15000);
-
+    // Use AI to extract individual businesses from the combined content
+    const combinedContent = allContent.join('\n\n---\n\n').slice(0, 20000);
     console.log('Sending to AI for extraction, content length:', combinedContent.length);
 
     const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
@@ -141,20 +147,22 @@ Deno.serve(async (req) => {
         messages: [
           {
             role: 'system',
-            content: `You are a data extraction expert. Extract REAL individual business listings from the provided web content. 
-Rules:
-- Only extract REAL business establishments (restaurants, stores, clinics, etc.) that are registered on Google My Business
-- Do NOT include article titles, blog names, website names, or "top 10" list names
-- Do NOT include aggregator sites (TripAdvisor, Yelp, etc.) as businesses
-- Extract: name, full address, phone number, website URL, rating (1-5), number of reviews, business category
-- Phone numbers should be in Brazilian format
-- Rating should be a decimal number (e.g., 4.5)
-- If a field is not available, use null
-- Return ONLY valid JSON, no markdown formatting`,
+            content: `Você é um especialista em extração de dados de empresas do Google Meu Negócio (Google My Business).
+
+REGRAS OBRIGATÓRIAS:
+1. Extraia APENAS empresas REAIS que existem fisicamente - estabelecimentos com CNPJ, endereço real
+2. NÃO inclua: nomes de artigos, blogs, sites agregadores (TripAdvisor, Yelp, iFood, Rappi)
+3. NÃO inclua: listas "top 10", "melhores", "guias", "onde comer"
+4. Cada empresa deve ter pelo menos o nome
+5. Telefone deve estar em formato brasileiro: (XX) XXXX-XXXX ou (XX) XXXXX-XXXX
+6. Rating deve ser um número de 1.0 a 5.0
+7. Se um campo não está disponível, omita-o do resultado (não use "null" como texto)
+8. Extraia o máximo possível de empresas REAIS mencionadas no conteúdo
+9. Priorize empresas que tenham endereço ou telefone mencionados`,
           },
           {
             role: 'user',
-            content: `Extract all individual "${segment}" businesses located in "${location}" from this content. Return a JSON array of businesses:\n\n${combinedContent}`,
+            content: `Extraia todas as empresas reais do tipo "${segment}" localizadas em "${location}" mencionadas neste conteúdo. Retorne até ${max_results} empresas:\n\n${combinedContent}`,
           },
         ],
         tools: [
@@ -162,7 +170,7 @@ Rules:
             type: 'function',
             function: {
               name: 'extract_businesses',
-              description: 'Extract structured business data from web content',
+              description: 'Retorna lista de empresas reais extraídas do conteúdo',
               parameters: {
                 type: 'object',
                 properties: {
@@ -171,13 +179,13 @@ Rules:
                     items: {
                       type: 'object',
                       properties: {
-                        name: { type: 'string', description: 'Business name' },
-                        address: { type: 'string', description: 'Full address' },
-                        phone: { type: 'string', description: 'Phone number in Brazilian format' },
-                        website: { type: 'string', description: 'Business website URL' },
-                        rating: { type: 'number', description: 'Rating 1-5' },
-                        total_reviews: { type: 'number', description: 'Number of reviews' },
-                        category: { type: 'string', description: 'Business category/type' },
+                        name: { type: 'string', description: 'Nome da empresa' },
+                        address: { type: 'string', description: 'Endereço completo' },
+                        phone: { type: 'string', description: 'Telefone no formato (XX) XXXXX-XXXX' },
+                        website: { type: 'string', description: 'URL do site da empresa (não agregadores)' },
+                        rating: { type: 'number', description: 'Nota de 1.0 a 5.0' },
+                        total_reviews: { type: 'number', description: 'Número total de avaliações' },
+                        category: { type: 'string', description: 'Categoria/tipo do negócio' },
                       },
                       required: ['name'],
                       additionalProperties: false,
@@ -196,23 +204,23 @@ Rules:
 
     if (!aiResponse.ok) {
       const errText = await aiResponse.text();
-      console.error('AI extraction error:', aiResponse.status, errText);
+      console.error('AI error:', aiResponse.status, errText);
       
       if (aiResponse.status === 429) {
         return new Response(
-          JSON.stringify({ error: 'Rate limit exceeded, try again later' }),
+          JSON.stringify({ error: 'Limite de requisições excedido. Tente novamente em instantes.' }),
           { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
       if (aiResponse.status === 402) {
         return new Response(
-          JSON.stringify({ error: 'AI credits depleted' }),
+          JSON.stringify({ error: 'Créditos de IA esgotados.' }),
           { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
       
       return new Response(
-        JSON.stringify({ error: 'AI extraction failed' }),
+        JSON.stringify({ error: 'Falha na extração por IA' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -220,7 +228,6 @@ Rules:
     const aiData = await aiResponse.json();
     let businesses: any[] = [];
 
-    // Parse tool call response
     const toolCall = aiData?.choices?.[0]?.message?.tool_calls?.[0];
     if (toolCall?.function?.arguments) {
       try {
@@ -233,52 +240,55 @@ Rules:
 
     console.log(`AI extracted ${businesses.length} businesses`);
 
-    // Step 4: Convert to PlaceData format and deduplicate
+    // Convert to PlaceData and clean
     const places: PlaceData[] = [];
     const seenNames = new Set<string>();
 
     for (const biz of businesses) {
-      if (!biz.name || biz.name.length < 2) continue;
+      const name = cleanNullish(biz.name);
+      if (!name || name.length < 2) continue;
       
-      const normalizedName = biz.name.toLowerCase().trim();
+      const normalizedName = name.toLowerCase();
       if (seenNames.has(normalizedName)) continue;
       seenNames.add(normalizedName);
 
-      // Validate and clean data
       let rating = biz.rating ? Number(biz.rating) : null;
       if (rating && (rating < 1 || rating > 5)) rating = null;
 
       let totalReviews = biz.total_reviews ? Number(biz.total_reviews) : null;
       if (totalReviews && totalReviews < 0) totalReviews = null;
 
-      let website = biz.website || null;
+      let website = cleanNullish(biz.website);
       if (website) {
-        // Skip aggregator sites
-        if (/(tripadvisor|yelp|foursquare|facebook\.com|instagram\.com|youtube|google\.com)/i.test(website)) {
+        if (/(tripadvisor|yelp|foursquare|facebook\.com|instagram\.com|youtube|google\.com|ifood|rappi)/i.test(website)) {
           website = null;
-        }
-        // Ensure URL has protocol
-        if (website && !website.startsWith('http')) {
+        } else if (!website.startsWith('http')) {
           website = `https://${website}`;
         }
       }
 
+      let phone = cleanNullish(biz.phone);
+      if (phone) {
+        const cleaned = phone.replace(/\D/g, '');
+        if (cleaned.length < 8 || cleaned.length > 13) phone = null;
+      }
+
       places.push({
         place_id: generatePlaceId(),
-        name: biz.name.trim(),
-        address: biz.address || null,
-        phone: biz.phone || null,
+        name,
+        address: cleanNullish(biz.address),
+        phone,
         website,
         rating,
         total_reviews: totalReviews,
-        category: biz.category || segment,
+        category: cleanNullish(biz.category) || segment,
         google_maps_url: null,
       });
 
       if (places.length >= max_results) break;
     }
 
-    // Apply keyword exclusion filter
+    // Apply keyword exclusion
     let finalPlaces = places;
     if (keywords_exclude) {
       const excludeWords = keywords_exclude.split(',').map(w => w.trim().toLowerCase()).filter(Boolean);
