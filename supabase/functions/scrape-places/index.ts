@@ -19,25 +19,6 @@ function generatePlaceId(): string {
   return `gm_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 }
 
-// Filter out article/blog/list titles that aren't real businesses
-function isArticleTitle(name: string): boolean {
-  return /\b(melhores|top \d|best \d|onde comer|where to|guia de|os \d+ |las \d+ |dicas|blog|como escolher|ranking|lista de|review of|updated|atualizado|youtube)/i.test(name);
-}
-
-// Filter out non-business URLs
-function isArticleSite(url: string): boolean {
-  return /(tripadvisor|yelp|foursquare|facebook\.com|instagram\.com|youtube|blog|guia|wikipedia|tiktok|twitter|x\.com|reddit)/i.test(url);
-}
-
-// Extract a valid Brazilian phone from text
-function extractPhone(text: string): string | null {
-  const match = text.match(/(?:\+55\s?)?(?:\(?0?\d{2}\)?\s?)?\d{4,5}[-.\s]?\d{4}/);
-  if (!match) return null;
-  const cleaned = match[0].replace(/\D/g, '');
-  if (cleaned.length >= 8 && cleaned.length <= 13) return match[0];
-  return null;
-}
-
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -70,10 +51,19 @@ Deno.serve(async (req) => {
       );
     }
 
+    const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
+    if (!lovableApiKey) {
+      return new Response(
+        JSON.stringify({ error: 'LOVABLE_API_KEY not configured' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     // ===== STRATEGY =====
-    // 1. Scrape Google local search results page (renders server-side, contains business cards)
-    // 2. Use Firecrawl JSON extraction to get structured business data
-    // 3. Fallback: scrape individual Google Maps place pages from links found
+    // 1. Use Firecrawl search to find pages that LIST businesses (TripAdvisor, blogs, etc.)
+    // 2. Scrape the top results to get full content with business names, ratings, etc.
+    // 3. Use AI to extract individual businesses from the scraped content
+    // 4. Return clean, structured business data
 
     const queryParts = [segment];
     if (category_filter) queryParts.push(category_filter);
@@ -81,115 +71,99 @@ Deno.serve(async (req) => {
     queryParts.push(location);
 
     const searchQuery = queryParts.join(' ');
-    const places: PlaceData[] = [];
-    const seenNames = new Set<string>();
 
-    // ---- APPROACH 1: Scrape Google Local Search results with JSON extraction ----
-    const googleLocalUrl = `https://www.google.com/search?q=${encodeURIComponent(searchQuery)}&tbm=lcl&num=20`;
-    console.log('Scraping Google local search:', googleLocalUrl);
+    // Step 1: Search for pages listing businesses
+    console.log('Searching for business listings:', searchQuery);
 
-    const localScrape = await fetch('https://api.firecrawl.dev/v1/scrape', {
+    const searchResponse = await fetch('https://api.firecrawl.dev/v1/search', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        url: googleLocalUrl,
-        formats: [
-          'markdown',
-          {
-            type: 'json',
-            prompt: `Extract all business listings from this Google local search results page. For each business, extract: name, address, phone number, rating (number 1-5), number of reviews, category/type, and Google Maps URL if available. Only extract real business names, NOT article titles or "top 10" lists.`,
-            schema: {
-              type: 'object',
-              properties: {
-                businesses: {
-                  type: 'array',
-                  items: {
-                    type: 'object',
-                    properties: {
-                      name: { type: 'string' },
-                      address: { type: 'string' },
-                      phone: { type: 'string' },
-                      rating: { type: 'number' },
-                      total_reviews: { type: 'number' },
-                      category: { type: 'string' },
-                      google_maps_url: { type: 'string' },
-                      website: { type: 'string' },
-                    },
-                    required: ['name'],
-                  },
-                },
-              },
-              required: ['businesses'],
-            },
-          },
-        ],
-        waitFor: 3000,
-        location: {
-          country: 'BR',
-          languages: [search_language === 'pt' ? 'pt-BR' : search_language],
+        query: `${searchQuery} telefone endereço avaliações Google`,
+        limit: 10,
+        lang: search_language === 'pt' ? 'pt-br' : search_language,
+        country: 'BR',
+        scrapeOptions: {
+          formats: ['markdown'],
+          onlyMainContent: true,
         },
       }),
     });
 
-    const localData = await localScrape.json();
-    console.log('Google local scrape status:', localScrape.status);
+    const searchData = await searchResponse.json();
+    console.log('Search status:', searchResponse.status);
 
-    // Process JSON extraction results
-    const jsonData = localData?.data?.json || localData?.json;
-    if (jsonData?.businesses) {
-      console.log(`JSON extraction found ${jsonData.businesses.length} businesses`);
-      for (const biz of jsonData.businesses) {
-        if (!biz.name || biz.name.length < 2 || isArticleTitle(biz.name)) continue;
-        if (seenNames.has(biz.name.toLowerCase())) continue;
-        seenNames.add(biz.name.toLowerCase());
+    if (!searchResponse.ok) {
+      console.error('Search error:', JSON.stringify(searchData));
+      return new Response(
+        JSON.stringify({ error: 'Search failed' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
-        places.push({
-          place_id: generatePlaceId(),
-          name: biz.name,
-          address: biz.address || null,
-          phone: biz.phone || null,
-          website: biz.website && !isArticleSite(biz.website) ? biz.website : null,
-          rating: biz.rating && biz.rating >= 1 && biz.rating <= 5 ? biz.rating : null,
-          total_reviews: biz.total_reviews && biz.total_reviews > 0 ? biz.total_reviews : null,
-          category: biz.category || segment,
-          google_maps_url: biz.google_maps_url || null,
-        });
+    // Step 2: Collect all scraped content
+    const allContent: string[] = [];
 
-        if (places.length >= max_results) break;
+    if (searchData?.data) {
+      for (const result of searchData.data) {
+        const md = result.markdown || result.description || '';
+        if (md.length > 50) {
+          allContent.push(md.slice(0, 3000)); // Limit per result to avoid token overflow
+        }
       }
     }
 
-    // Also parse the markdown for any additional businesses
-    const markdown = localData?.data?.markdown || localData?.markdown || '';
-    console.log('Local search markdown length:', markdown.length);
-    if (markdown.length > 100) {
-      console.log('Markdown preview:', markdown.slice(0, 1500));
+    console.log(`Collected content from ${allContent.length} pages`);
+
+    if (allContent.length === 0) {
+      return new Response(
+        JSON.stringify({ success: true, places: [] }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
-    // ---- APPROACH 2: If JSON extraction didn't work well, try Google Maps scrape ----
-    if (places.length < 3) {
-      console.log('JSON extraction yielded few results, trying Google Maps scrape...');
-      
-      const mapsQuery = `${segment}${category_filter ? ' ' + category_filter : ''} em ${location}`;
-      const mapsUrl = `https://www.google.com/maps/search/${encodeURIComponent(mapsQuery)}`;
+    // Step 3: Use AI to extract individual businesses
+    const combinedContent = allContent.join('\n\n---PAGE BREAK---\n\n').slice(0, 15000);
 
-      const mapsScrape = await fetch('https://api.firecrawl.dev/v1/scrape', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${apiKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          url: mapsUrl,
-          formats: [
-            'markdown',
-            {
-              type: 'json',
-              prompt: `Extract all business listings shown on this Google Maps search results page. For each business extract: name, full address, phone, rating, number of reviews, category, website URL. Only real businesses, not articles.`,
-              schema: {
+    console.log('Sending to AI for extraction, content length:', combinedContent.length);
+
+    const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${lovableApiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'google/gemini-2.5-flash',
+        messages: [
+          {
+            role: 'system',
+            content: `You are a data extraction expert. Extract REAL individual business listings from the provided web content. 
+Rules:
+- Only extract REAL business establishments (restaurants, stores, clinics, etc.) that are registered on Google My Business
+- Do NOT include article titles, blog names, website names, or "top 10" list names
+- Do NOT include aggregator sites (TripAdvisor, Yelp, etc.) as businesses
+- Extract: name, full address, phone number, website URL, rating (1-5), number of reviews, business category
+- Phone numbers should be in Brazilian format
+- Rating should be a decimal number (e.g., 4.5)
+- If a field is not available, use null
+- Return ONLY valid JSON, no markdown formatting`,
+          },
+          {
+            role: 'user',
+            content: `Extract all individual "${segment}" businesses located in "${location}" from this content. Return a JSON array of businesses:\n\n${combinedContent}`,
+          },
+        ],
+        tools: [
+          {
+            type: 'function',
+            function: {
+              name: 'extract_businesses',
+              description: 'Extract structured business data from web content',
+              parameters: {
                 type: 'object',
                 properties: {
                   businesses: {
@@ -197,119 +171,111 @@ Deno.serve(async (req) => {
                     items: {
                       type: 'object',
                       properties: {
-                        name: { type: 'string' },
-                        address: { type: 'string' },
-                        phone: { type: 'string' },
-                        rating: { type: 'number' },
-                        total_reviews: { type: 'number' },
-                        category: { type: 'string' },
-                        website: { type: 'string' },
+                        name: { type: 'string', description: 'Business name' },
+                        address: { type: 'string', description: 'Full address' },
+                        phone: { type: 'string', description: 'Phone number in Brazilian format' },
+                        website: { type: 'string', description: 'Business website URL' },
+                        rating: { type: 'number', description: 'Rating 1-5' },
+                        total_reviews: { type: 'number', description: 'Number of reviews' },
+                        category: { type: 'string', description: 'Business category/type' },
                       },
                       required: ['name'],
+                      additionalProperties: false,
                     },
                   },
                 },
                 required: ['businesses'],
+                additionalProperties: false,
               },
             },
-          ],
-          waitFor: 5000,
-          location: { country: 'BR', languages: ['pt-BR'] },
-        }),
-      });
+          },
+        ],
+        tool_choice: { type: 'function', function: { name: 'extract_businesses' } },
+      }),
+    });
 
-      const mapsData = await mapsScrape.json();
-      console.log('Maps scrape status:', mapsScrape.status);
-
-      const mapsJson = mapsData?.data?.json || mapsData?.json;
-      if (mapsJson?.businesses) {
-        console.log(`Maps JSON extraction found ${mapsJson.businesses.length} businesses`);
-        for (const biz of mapsJson.businesses) {
-          if (!biz.name || biz.name.length < 2 || isArticleTitle(biz.name)) continue;
-          if (seenNames.has(biz.name.toLowerCase())) continue;
-          seenNames.add(biz.name.toLowerCase());
-
-          places.push({
-            place_id: generatePlaceId(),
-            name: biz.name,
-            address: biz.address || null,
-            phone: biz.phone || null,
-            website: biz.website && !isArticleSite(biz.website) ? biz.website : null,
-            rating: biz.rating && biz.rating >= 1 && biz.rating <= 5 ? biz.rating : null,
-            total_reviews: biz.total_reviews && biz.total_reviews > 0 ? biz.total_reviews : null,
-            category: biz.category || segment,
-            google_maps_url: null,
-          });
-
-          if (places.length >= max_results) break;
-        }
+    if (!aiResponse.ok) {
+      const errText = await aiResponse.text();
+      console.error('AI extraction error:', aiResponse.status, errText);
+      
+      if (aiResponse.status === 429) {
+        return new Response(
+          JSON.stringify({ error: 'Rate limit exceeded, try again later' }),
+          { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
       }
+      if (aiResponse.status === 402) {
+        return new Response(
+          JSON.stringify({ error: 'AI credits depleted' }),
+          { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      
+      return new Response(
+        JSON.stringify({ error: 'AI extraction failed' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
-      // Parse Maps markdown as well
-      const mapsMarkdown = mapsData?.data?.markdown || mapsData?.markdown || '';
-      console.log('Maps markdown length:', mapsMarkdown.length);
-      if (mapsMarkdown.length > 100) {
-        console.log('Maps markdown preview:', mapsMarkdown.slice(0, 1500));
+    const aiData = await aiResponse.json();
+    let businesses: any[] = [];
+
+    // Parse tool call response
+    const toolCall = aiData?.choices?.[0]?.message?.tool_calls?.[0];
+    if (toolCall?.function?.arguments) {
+      try {
+        const parsed = JSON.parse(toolCall.function.arguments);
+        businesses = parsed.businesses || [];
+      } catch (e) {
+        console.error('Failed to parse AI response:', e);
       }
     }
 
-    // ---- APPROACH 3: Firecrawl search as last resort ----
-    if (places.length < 3) {
-      console.log('Trying Firecrawl search as fallback...');
+    console.log(`AI extracted ${businesses.length} businesses`);
 
-      // Search for individual business listings, not articles
-      const fbSearchQuery = `"${segment}" "${location}" telefone endereço avaliações -melhores -top -ranking -blog -guia`;
+    // Step 4: Convert to PlaceData format and deduplicate
+    const places: PlaceData[] = [];
+    const seenNames = new Set<string>();
+
+    for (const biz of businesses) {
+      if (!biz.name || biz.name.length < 2) continue;
       
-      const searchResp = await fetch('https://api.firecrawl.dev/v1/search', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${apiKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          query: fbSearchQuery,
-          limit: Math.min(max_results, 20),
-          lang: search_language === 'pt' ? 'pt-br' : search_language,
-          country: 'BR',
-        }),
-      });
+      const normalizedName = biz.name.toLowerCase().trim();
+      if (seenNames.has(normalizedName)) continue;
+      seenNames.add(normalizedName);
 
-      const searchData = await searchResp.json();
-      console.log('Fallback search status:', searchResp.status);
+      // Validate and clean data
+      let rating = biz.rating ? Number(biz.rating) : null;
+      if (rating && (rating < 1 || rating > 5)) rating = null;
 
-      if (searchResp.ok && searchData?.data) {
-        for (const result of searchData.data) {
-          const url = result.url || '';
-          let name = result.title || '';
+      let totalReviews = biz.total_reviews ? Number(biz.total_reviews) : null;
+      if (totalReviews && totalReviews < 0) totalReviews = null;
 
-          // Clean up title
-          name = name.replace(/\s*[-–·|].*$/i, '').trim();
-
-          if (!name || name.length < 2 || name.length > 80) continue;
-          if (seenNames.has(name.toLowerCase())) continue;
-          if (isArticleTitle(name)) continue;
-          if (isArticleSite(url)) continue;
-
-          seenNames.add(name.toLowerCase());
-
-          const desc = result.description || '';
-          const phone = extractPhone(desc);
-
-          places.push({
-            place_id: generatePlaceId(),
-            name,
-            address: desc.slice(0, 200) || null,
-            phone,
-            website: isArticleSite(url) ? null : url,
-            rating: null,
-            total_reviews: null,
-            category: segment,
-            google_maps_url: url.includes('google.com/maps') ? url : null,
-          });
-
-          if (places.length >= max_results) break;
+      let website = biz.website || null;
+      if (website) {
+        // Skip aggregator sites
+        if (/(tripadvisor|yelp|foursquare|facebook\.com|instagram\.com|youtube|google\.com)/i.test(website)) {
+          website = null;
+        }
+        // Ensure URL has protocol
+        if (website && !website.startsWith('http')) {
+          website = `https://${website}`;
         }
       }
+
+      places.push({
+        place_id: generatePlaceId(),
+        name: biz.name.trim(),
+        address: biz.address || null,
+        phone: biz.phone || null,
+        website,
+        rating,
+        total_reviews: totalReviews,
+        category: biz.category || segment,
+        google_maps_url: null,
+      });
+
+      if (places.length >= max_results) break;
     }
 
     // Apply keyword exclusion filter
@@ -322,7 +288,6 @@ Deno.serve(async (req) => {
       });
     }
 
-    finalPlaces = finalPlaces.slice(0, max_results);
     console.log(`Returning ${finalPlaces.length} businesses`);
 
     return new Response(
