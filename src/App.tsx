@@ -67,6 +67,36 @@ const App = () => {
     return () => subscription.unsubscribe();
   }, []);
 
+  // Copy protection
+  useEffect(() => {
+    const blockCopy = (e: ClipboardEvent) => {
+      e.preventDefault();
+      e.clipboardData?.setData("text/plain", "⚠️ Conteúdo protegido. Cópia não permitida.");
+    };
+    const blockContextMenu = (e: MouseEvent) => e.preventDefault();
+    const blockKeys = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && ["c", "u", "s", "a"].includes(e.key.toLowerCase())) {
+        e.preventDefault();
+      }
+      if (e.key === "F12" || ((e.ctrlKey || e.metaKey) && e.shiftKey && ["i", "j", "c"].includes(e.key.toLowerCase()))) {
+        e.preventDefault();
+      }
+    };
+    const blockDrag = (e: DragEvent) => e.preventDefault();
+
+    document.addEventListener("copy", blockCopy);
+    document.addEventListener("contextmenu", blockContextMenu);
+    document.addEventListener("keydown", blockKeys);
+    document.addEventListener("dragstart", blockDrag);
+
+    return () => {
+      document.removeEventListener("copy", blockCopy);
+      document.removeEventListener("contextmenu", blockContextMenu);
+      document.removeEventListener("keydown", blockKeys);
+      document.removeEventListener("dragstart", blockDrag);
+    };
+  }, []);
+
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
