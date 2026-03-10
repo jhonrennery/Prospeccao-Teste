@@ -35,11 +35,25 @@ Deno.serve(async (req) => {
       /.*\.(png|jpg|jpeg|gif|svg|webp|css|js)$/i,
     ];
 
+    const instagramRegex = /(?:instagram\.com\/|@)([a-zA-Z0-9._]{2,30})/gi;
+
     for (const place of places) {
       if (!place.website) {
         results.push({ id: place.id });
         continue;
       }
+
+      const extractFromContent = (content: string) => {
+        const emails = content.match(emailRegex) || [];
+        const validEmails = emails.filter((email: string) =>
+          !excludePatterns.some(pattern => pattern.test(email))
+        );
+        const igMatches = [...content.matchAll(instagramRegex)];
+        const igUsernames = igMatches.map(m => m[1]).filter(u => 
+          !['p', 'reel', 'stories', 'explore', 'accounts', 'direct'].includes(u.toLowerCase())
+        );
+        return { emails: validEmails, instagram: igUsernames.length > 0 ? `@${igUsernames[0]}` : undefined };
+      };
 
       try {
         let url = place.website.trim();
