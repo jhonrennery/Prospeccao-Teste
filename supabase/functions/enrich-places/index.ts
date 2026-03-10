@@ -26,7 +26,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    const results: Array<{ id: string; email?: string }> = [];
+    const results: Array<{ id: string; email?: string; instagram?: string }> = [];
 
     // Email regex patterns
     const emailRegex = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g;
