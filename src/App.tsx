@@ -81,6 +81,21 @@ const App = () => {
       if (e.key === "F12" || ((e.ctrlKey || e.metaKey) && e.shiftKey && ["i", "j", "c"].includes(e.key.toLowerCase()))) {
         e.preventDefault();
       }
+      // Block PrintScreen
+      if (e.key === "PrintScreen") {
+        e.preventDefault();
+        navigator.clipboard.writeText("").catch(() => {});
+        toast.warning("⚠️ Captura de tela não permitida!", {
+          description: "O conteúdo desta página é protegido.",
+        });
+      }
+      // Block Win+Shift+S (Windows snipping tool)
+      if ((e.metaKey || e.key === "Meta") && e.shiftKey && e.key.toLowerCase() === "s") {
+        e.preventDefault();
+        toast.warning("⚠️ Captura de tela não permitida!", {
+          description: "O conteúdo desta página é protegido.",
+        });
+      }
     };
     const blockDrag = (e: DragEvent) => e.preventDefault();
 
