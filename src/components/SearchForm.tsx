@@ -216,10 +216,15 @@ export function SearchForm({ onSearch, isLoading }: SearchFormProps) {
   const { cities, districts, loadingCities, loadingDistricts } = useBrazilianLocations(params.state, params.city);
 
   const [citySearch, setCitySearch] = useState("");
+  const [districtSearch, setDistrictSearch] = useState("");
   const filteredCities = useMemo(() => {
     if (!citySearch) return cities.slice(0, 50);
-    return cities.filter((c) => c.toLowerCase().includes(citySearch.toLowerCase())).slice(0, 50);
+    return cities.filter((c) => c.toLowerCase().startsWith(citySearch.toLowerCase())).slice(0, 50);
   }, [cities, citySearch]);
+  const filteredDistricts = useMemo(() => {
+    if (!districtSearch) return districts.slice(0, 50);
+    return districts.filter((d) => d.toLowerCase().startsWith(districtSearch.toLowerCase())).slice(0, 50);
+  }, [districts, districtSearch]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -384,6 +389,7 @@ export function SearchForm({ onSearch, isLoading }: SearchFormProps) {
                 value={params.city}
                 onValueChange={(v) => {
                   setParams((p) => ({ ...p, city: v, neighborhood: "", location: v }));
+                  setDistrictSearch("");
                 }}
               >
                 <SelectTrigger className="bg-secondary border-border">
@@ -433,8 +439,17 @@ export function SearchForm({ onSearch, isLoading }: SearchFormProps) {
                   <SelectValue placeholder="Selecione o bairro" />
                 </SelectTrigger>
                 <SelectContent>
+                  <div className="px-2 py-1.5">
+                    <Input
+                      placeholder="Buscar bairro..."
+                      value={districtSearch}
+                      onChange={(e) => setDistrictSearch(e.target.value)}
+                      className="h-8 text-sm bg-background"
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                  </div>
                   <SelectItem value="all">Todos os bairros</SelectItem>
-                  {districts.map((d) => (
+                  {filteredDistricts.map((d) => (
                     <SelectItem key={d} value={d}>{d}</SelectItem>
                   ))}
                 </SelectContent>
