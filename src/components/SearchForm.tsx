@@ -389,6 +389,7 @@ export function SearchForm({ onSearch, isLoading }: SearchFormProps) {
                 value={params.city}
                 onValueChange={(v) => {
                   setParams((p) => ({ ...p, city: v, neighborhood: "", location: v }));
+                  setDistrictSearch("");
                 }}
               >
                 <SelectTrigger className="bg-secondary border-border">
