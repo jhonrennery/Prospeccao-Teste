@@ -13,6 +13,8 @@ interface PlaceData {
   total_reviews: number | null;
   category: string;
   google_maps_url: string | null;
+  email: string | null;
+  instagram: string | null;
 }
 
 function generatePlaceId(): string {
