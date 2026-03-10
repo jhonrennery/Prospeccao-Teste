@@ -438,8 +438,17 @@ export function SearchForm({ onSearch, isLoading }: SearchFormProps) {
                   <SelectValue placeholder="Selecione o bairro" />
                 </SelectTrigger>
                 <SelectContent>
+                  <div className="px-2 py-1.5">
+                    <Input
+                      placeholder="Buscar bairro..."
+                      value={districtSearch}
+                      onChange={(e) => setDistrictSearch(e.target.value)}
+                      className="h-8 text-sm bg-background"
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                  </div>
                   <SelectItem value="all">Todos os bairros</SelectItem>
-                  {districts.map((d) => (
+                  {filteredDistricts.map((d) => (
                     <SelectItem key={d} value={d}>{d}</SelectItem>
                   ))}
                 </SelectContent>
