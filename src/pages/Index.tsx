@@ -107,6 +107,8 @@ export default function Index() {
           total_reviews: p.total_reviews,
           category: p.category,
           google_maps_url: p.google_maps_url,
+          email: p.email || null,
+          instagram: p.instagram || null,
         }));
 
         const { data: savedPlaces, error: saveError } = await supabase
