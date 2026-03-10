@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ExternalLink, Phone, Mail, Star, Globe, MapPin, Plus, Check, Loader2 } from "lucide-react";
+import { ExternalLink, Phone, Mail, Star, Globe, MapPin, Plus, Check, Loader2, Instagram } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
