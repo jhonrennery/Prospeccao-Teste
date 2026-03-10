@@ -80,6 +80,8 @@ export default function Leads() {
           rating: l.places?.rating ? Number(l.places.rating) : null,
           category: l.places?.category,
           google_maps_url: l.places?.google_maps_url,
+          email: l.places?.email || null,
+          instagram: l.places?.instagram || null,
         },
       }));
       setLeads(mapped);
