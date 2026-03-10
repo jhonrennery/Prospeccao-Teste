@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ExternalLink, Phone, Mail, Star, Globe, MapPin, Plus, Check, Loader2 } from "lucide-react";
+import { ExternalLink, Phone, Mail, Star, Globe, MapPin, Plus, Check, Loader2, Instagram } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
@@ -16,6 +16,7 @@ export interface PlaceResult {
   category?: string;
   google_maps_url?: string;
   email?: string;
+  instagram?: string;
   enrichment_status?: "pending" | "enriched" | "not_found";
   is_lead?: boolean;
 }
@@ -138,7 +139,15 @@ export function ResultsTable({ results, onAddToLeads, onEnrich, isEnriching }: R
                     {place.email && (
                       <div className="flex items-center gap-1 text-xs text-primary">
                         <Mail className="h-3 w-3" />
-                        {place.email}
+                        <a href={`mailto:${place.email}`} className="hover:underline">{place.email}</a>
+                      </div>
+                    )}
+                    {place.instagram && (
+                      <div className="flex items-center gap-1 text-xs text-pink-500">
+                        <Instagram className="h-3 w-3" />
+                        <a href={`https://instagram.com/${place.instagram.replace('@', '')}`} target="_blank" rel="noopener noreferrer" className="hover:underline">
+                          {place.instagram}
+                        </a>
                       </div>
                     )}
                   </div>

@@ -85,7 +85,15 @@ export default function Index() {
 
       if (error) throw error;
 
+      // Store email/instagram from scrape separately (not in places table)
+      const scrapedExtras = new Map<string, { email?: string; instagram?: string }>();
       if (data?.places && data.places.length > 0) {
+        for (const p of data.places) {
+          if (p.email || p.instagram) {
+            scrapedExtras.set(p.place_id, { email: p.email, instagram: p.instagram });
+          }
+        }
+
         // Save places to database
         const placesToInsert = data.places.map((p: any) => ({
           search_job_id: job.id,
@@ -147,17 +155,22 @@ export default function Index() {
           .update({ status: "completed", total_found: filtered.length })
           .eq("id", job.id);
 
-        const mapped: PlaceResult[] = filtered.map((p) => ({
-          id: p.id,
-          name: p.name,
-          address: p.address || undefined,
-          phone: p.phone || undefined,
-          website: p.website || undefined,
-          rating: p.rating ? Number(p.rating) : undefined,
-          total_reviews: p.total_reviews || undefined,
-          category: p.category || undefined,
-          google_maps_url: p.google_maps_url || undefined,
-        }));
+        const mapped: PlaceResult[] = filtered.map((p) => {
+          const extras = scrapedExtras.get(p.place_id || '');
+          return {
+            id: p.id,
+            name: p.name,
+            address: p.address || undefined,
+            phone: p.phone || undefined,
+            website: p.website || undefined,
+            rating: p.rating ? Number(p.rating) : undefined,
+            total_reviews: p.total_reviews || undefined,
+            category: p.category || undefined,
+            google_maps_url: p.google_maps_url || undefined,
+            email: extras?.email || undefined,
+            instagram: extras?.instagram || undefined,
+          };
+        });
 
         setResults(mapped);
         toast.success(`${mapped.length} empresas encontradas!`);
@@ -197,7 +210,7 @@ export default function Index() {
       if (error) throw error;
 
       if (data?.results) {
-        const enriched = data.results as Array<{ id: string; email?: string }>;
+        const enriched = data.results as Array<{ id: string; email?: string; instagram?: string }>;
         const { data: userData } = await supabase.auth.getUser();
 
         for (const item of enriched) {
@@ -215,9 +228,13 @@ export default function Index() {
         setResults((prev) =>
           prev.map((r) => {
             const match = enriched.find((e) => e.id === r.id);
-            return match?.email
-              ? { ...r, email: match.email, enrichment_status: "enriched" as const }
-              : r;
+            if (!match) return r;
+            return {
+              ...r,
+              ...(match.email && { email: match.email }),
+              ...(match.instagram && { instagram: match.instagram }),
+              enrichment_status: (match.email || match.instagram) ? "enriched" as const : r.enrichment_status,
+            };
           })
         );
 

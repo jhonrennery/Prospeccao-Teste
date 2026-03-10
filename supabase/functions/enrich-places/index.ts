@@ -26,7 +26,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    const results: Array<{ id: string; email?: string }> = [];
+    const results: Array<{ id: string; email?: string; instagram?: string }> = [];
 
     // Email regex patterns
     const emailRegex = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g;
@@ -35,11 +35,25 @@ Deno.serve(async (req) => {
       /.*\.(png|jpg|jpeg|gif|svg|webp|css|js)$/i,
     ];
 
+    const instagramRegex = /(?:instagram\.com\/|@)([a-zA-Z0-9._]{2,30})/gi;
+
     for (const place of places) {
       if (!place.website) {
         results.push({ id: place.id });
         continue;
       }
+
+      const extractFromContent = (content: string) => {
+        const emails = content.match(emailRegex) || [];
+        const validEmails = emails.filter((email: string) =>
+          !excludePatterns.some(pattern => pattern.test(email))
+        );
+        const igMatches = [...content.matchAll(instagramRegex)];
+        const igUsernames = igMatches.map(m => m[1]).filter(u => 
+          !['p', 'reel', 'stories', 'explore', 'accounts', 'direct'].includes(u.toLowerCase())
+        );
+        return { emails: validEmails, instagram: igUsernames.length > 0 ? `@${igUsernames[0]}` : undefined };
+      };
 
       try {
         let url = place.website.trim();
@@ -69,19 +83,15 @@ Deno.serve(async (req) => {
           const content = (data.data?.markdown || data.markdown || '') + ' ' + 
                          (data.data?.html || data.html || '');
 
-          const emails = content.match(emailRegex) || [];
-          const validEmails = emails.filter((email: string) => 
-            !excludePatterns.some(pattern => pattern.test(email))
-          );
+          const extracted = extractFromContent(content);
 
-          if (validEmails.length > 0) {
-            // Pick the most likely contact email
-            const contactEmail = validEmails.find((e: string) => 
+          if (extracted.emails.length > 0) {
+            const contactEmail = extracted.emails.find((e: string) => 
               /^(contato|contact|info|comercial|vendas|sales|hello|ola)/i.test(e)
-            ) || validEmails[0];
+            ) || extracted.emails[0];
 
-            results.push({ id: place.id, email: contactEmail });
-            console.log(`Found email for ${url}: ${contactEmail}`);
+            results.push({ id: place.id, email: contactEmail, instagram: extracted.instagram });
+            console.log(`Found email for ${url}: ${contactEmail}`, extracted.instagram ? `IG: ${extracted.instagram}` : '');
           } else {
             // Try contact page
             const links = data.data?.links || data.links || [];
@@ -107,22 +117,19 @@ Deno.serve(async (req) => {
               const contactData = await contactResponse.json();
               if (contactResponse.ok) {
                 const contactContent = contactData.data?.markdown || contactData.markdown || '';
-                const contactEmails = contactContent.match(emailRegex) || [];
-                const validContactEmails = contactEmails.filter((email: string) =>
-                  !excludePatterns.some(pattern => pattern.test(email))
-                );
+                const contactExtracted = extractFromContent(contactContent);
+                const ig = extracted.instagram || contactExtracted.instagram;
 
-                if (validContactEmails.length > 0) {
-                  results.push({ id: place.id, email: validContactEmails[0] });
-                  console.log(`Found email on contact page: ${validContactEmails[0]}`);
+                if (contactExtracted.emails.length > 0) {
+                  results.push({ id: place.id, email: contactExtracted.emails[0], instagram: ig });
                 } else {
-                  results.push({ id: place.id });
+                  results.push({ id: place.id, instagram: ig });
                 }
               } else {
-                results.push({ id: place.id });
+                results.push({ id: place.id, instagram: extracted.instagram });
               }
             } else {
-              results.push({ id: place.id });
+              results.push({ id: place.id, instagram: extracted.instagram });
             }
           }
         } else {

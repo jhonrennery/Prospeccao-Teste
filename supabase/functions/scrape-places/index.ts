@@ -13,6 +13,8 @@ interface PlaceData {
   total_reviews: number | null;
   category: string;
   google_maps_url: string | null;
+  email: string | null;
+  instagram: string | null;
 }
 
 function generatePlaceId(): string {
@@ -128,7 +130,7 @@ Deno.serve(async (req) => {
           },
           {
             role: 'user',
-            content: `Extraia até ${max_results} "${segment}" de "${location}":\n\n${content}`,
+            content: `Extraia até ${max_results} "${segment}" de "${location}". Inclua email e Instagram quando disponíveis:\n\n${content}`,
           },
         ],
         tools: [{
@@ -148,6 +150,8 @@ Deno.serve(async (req) => {
                       address: { type: 'string' },
                       phone: { type: 'string' },
                       website: { type: 'string' },
+                      email: { type: 'string' },
+                      instagram: { type: 'string', description: 'Instagram username or URL' },
                       rating: { type: 'number' },
                       total_reviews: { type: 'number' },
                       category: { type: 'string' },
@@ -217,6 +221,20 @@ Deno.serve(async (req) => {
         if (digits.length < 8 || digits.length > 13) phone = null;
       }
 
+      // Clean email
+      let email = cleanVal(biz.email);
+      if (email) {
+        const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+        if (!emailRegex.test(email)) email = null;
+      }
+
+      // Clean instagram
+      let instagram = cleanVal(biz.instagram);
+      if (instagram) {
+        instagram = instagram.replace(/^(https?:\/\/)?(www\.)?instagram\.com\//i, '').replace(/^@/, '').replace(/\/.*$/, '');
+        if (instagram.length < 2) instagram = null;
+      }
+
       places.push({
         place_id: generatePlaceId(),
         name,
@@ -227,6 +245,8 @@ Deno.serve(async (req) => {
         total_reviews: biz.total_reviews > 0 ? Number(biz.total_reviews) : null,
         category: cleanVal(biz.category) || segment,
         google_maps_url: null,
+        email,
+        instagram: instagram ? `@${instagram}` : null,
       });
 
       if (places.length >= max_results) break;
