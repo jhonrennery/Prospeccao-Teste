@@ -103,6 +103,32 @@ input, textarea, [contenteditable="true"] {
   }
 }
 
+/* Watermark overlay */
+.watermark-overlay {
+  position: relative;
+}
+
+.watermark-overlay::after {
+  content: "ProspectAI • Uso Exclusivo • ProspectAI • Uso Exclusivo • ProspectAI • Uso Exclusivo • ProspectAI • Uso Exclusivo • ProspectAI • Uso Exclusivo • ProspectAI • Uso Exclusivo • ProspectAI • Uso Exclusivo • ProspectAI • Uso Exclusivo • ProspectAI • Uso Exclusivo • ProspectAI • Uso Exclusivo • ProspectAI • Uso Exclusivo • ProspectAI • Uso Exclusivo • ProspectAI • Uso Exclusivo • ProspectAI • Uso Exclusivo • ProspectAI • Uso Exclusivo • ProspectAI • Uso Exclusivo • ProspectAI • Uso Exclusivo • ProspectAI • Uso Exclusivo • ProspectAI • Uso Exclusivo • ProspectAI • Uso Exclusivo";
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 200vw;
+  height: 200vh;
+  font-size: 14px;
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 500;
+  color: hsl(var(--foreground) / 0.04);
+  letter-spacing: 2px;
+  line-height: 3.5;
+  word-spacing: 40px;
+  transform: rotate(-25deg) translate(-20%, -20%);
+  pointer-events: none;
+  z-index: 9999;
+  white-space: normal;
+  overflow: hidden;
+}
+
 /* Scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
