@@ -16,6 +16,7 @@ export interface PlaceResult {
   category?: string;
   google_maps_url?: string;
   email?: string;
+  instagram?: string;
   enrichment_status?: "pending" | "enriched" | "not_found";
   is_lead?: boolean;
 }
