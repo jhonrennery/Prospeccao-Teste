@@ -104,8 +104,10 @@ export type Database = {
           address: string | null
           category: string | null
           created_at: string
+          email: string | null
           google_maps_url: string | null
           id: string
+          instagram: string | null
           latitude: number | null
           longitude: number | null
           name: string
@@ -121,8 +123,10 @@ export type Database = {
           address?: string | null
           category?: string | null
           created_at?: string
+          email?: string | null
           google_maps_url?: string | null
           id?: string
+          instagram?: string | null
           latitude?: number | null
           longitude?: number | null
           name: string
@@ -138,8 +142,10 @@ export type Database = {
           address?: string | null
           category?: string | null
           created_at?: string
+          email?: string | null
           google_maps_url?: string | null
           id?: string
+          instagram?: string | null
           latitude?: number | null
           longitude?: number | null
           name?: string
