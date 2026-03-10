@@ -471,10 +471,11 @@ export function SearchForm({ onSearch, isLoading }: SearchFormProps) {
             <Input
               placeholder="Ex: 01001-000"
               value={params.cep}
-              onChange={(e) => setParams((p) => ({ ...p, cep: e.target.value }))}
+              onChange={(e) => handleCepChange(e.target.value)}
               className="bg-secondary border-border"
+              maxLength={9}
             />
-            <p className="text-[10px] text-muted-foreground/70">Opcional - refina a localização</p>
+            <p className="text-[10px] text-muted-foreground/70">Opcional - preenche estado, cidade e bairro automaticamente</p>
           </div>
         </div>
 
