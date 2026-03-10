@@ -83,19 +83,15 @@ Deno.serve(async (req) => {
           const content = (data.data?.markdown || data.markdown || '') + ' ' + 
                          (data.data?.html || data.html || '');
 
-          const emails = content.match(emailRegex) || [];
-          const validEmails = emails.filter((email: string) => 
-            !excludePatterns.some(pattern => pattern.test(email))
-          );
+          const extracted = extractFromContent(content);
 
-          if (validEmails.length > 0) {
-            // Pick the most likely contact email
-            const contactEmail = validEmails.find((e: string) => 
+          if (extracted.emails.length > 0) {
+            const contactEmail = extracted.emails.find((e: string) => 
               /^(contato|contact|info|comercial|vendas|sales|hello|ola)/i.test(e)
-            ) || validEmails[0];
+            ) || extracted.emails[0];
 
-            results.push({ id: place.id, email: contactEmail });
-            console.log(`Found email for ${url}: ${contactEmail}`);
+            results.push({ id: place.id, email: contactEmail, instagram: extracted.instagram });
+            console.log(`Found email for ${url}: ${contactEmail}`, extracted.instagram ? `IG: ${extracted.instagram}` : '');
           } else {
             // Try contact page
             const links = data.data?.links || data.links || [];
@@ -121,22 +117,19 @@ Deno.serve(async (req) => {
               const contactData = await contactResponse.json();
               if (contactResponse.ok) {
                 const contactContent = contactData.data?.markdown || contactData.markdown || '';
-                const contactEmails = contactContent.match(emailRegex) || [];
-                const validContactEmails = contactEmails.filter((email: string) =>
-                  !excludePatterns.some(pattern => pattern.test(email))
-                );
+                const contactExtracted = extractFromContent(contactContent);
+                const ig = extracted.instagram || contactExtracted.instagram;
 
-                if (validContactEmails.length > 0) {
-                  results.push({ id: place.id, email: validContactEmails[0] });
-                  console.log(`Found email on contact page: ${validContactEmails[0]}`);
+                if (contactExtracted.emails.length > 0) {
+                  results.push({ id: place.id, email: contactExtracted.emails[0], instagram: ig });
                 } else {
-                  results.push({ id: place.id });
+                  results.push({ id: place.id, instagram: ig });
                 }
               } else {
-                results.push({ id: place.id });
+                results.push({ id: place.id, instagram: extracted.instagram });
               }
             } else {
-              results.push({ id: place.id });
+              results.push({ id: place.id, instagram: extracted.instagram });
             }
           }
         } else {
