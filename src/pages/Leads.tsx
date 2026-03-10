@@ -261,6 +261,26 @@ export default function Leads() {
                           </a>
                         );
                       })()}
+                      {lead.place.email && (
+                        <a
+                          href={`mailto:${lead.place.email}`}
+                          className="inline-flex items-center gap-1 text-primary hover:text-primary/80 underline underline-offset-2 transition-colors"
+                        >
+                          <Mail className="h-3 w-3 shrink-0" />
+                          <span className="truncate max-w-[200px]">{lead.place.email}</span>
+                        </a>
+                      )}
+                      {lead.place.instagram && (
+                        <a
+                          href={`https://instagram.com/${lead.place.instagram.replace(/^@/, '')}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 text-pink-500 hover:text-pink-400 underline underline-offset-2 transition-colors"
+                        >
+                          <Instagram className="h-3 w-3 shrink-0" />
+                          {lead.place.instagram.startsWith('@') ? lead.place.instagram : `@${lead.place.instagram}`}
+                        </a>
+                      )}
                     </div>
 
                     {lead.estimated_value != null && lead.estimated_value > 0 && (
