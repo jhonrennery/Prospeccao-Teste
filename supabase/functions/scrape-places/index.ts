@@ -146,14 +146,16 @@ Deno.serve(async (req) => {
                   items: {
                     type: 'object',
                     properties: {
-                      name: { type: 'string' },
+                      name: { type: 'object', properties: {}, additionalProperties: true },
                       address: { type: 'string' },
                       phone: { type: 'string' },
                       website: { type: 'string' },
+                      email: { type: 'string' },
+                      instagram: { type: 'string', description: 'Instagram username or URL' },
                       rating: { type: 'number' },
                       total_reviews: { type: 'number' },
                       category: { type: 'string' },
-                    },
+                    }.name = { type: 'string' },
                     required: ['name'],
                     additionalProperties: false,
                   },
