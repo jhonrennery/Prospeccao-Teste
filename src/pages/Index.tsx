@@ -196,27 +196,33 @@ export default function Index() {
   const handleEnrich = async (ids: string[]) => {
     setIsEnriching(true);
     try {
-      const placesToEnrich = results.filter((r) => ids.includes(r.id) && r.website);
+      // Allow enrichment for all selected places (not just those with website)
+      const placesToEnrich = results.filter((r) => ids.includes(r.id));
 
       if (placesToEnrich.length === 0) {
-        toast.warning("Selecione empresas com website para enriquecer.");
+        toast.warning("Selecione empresas para enriquecer.");
         return;
       }
 
       const { data, error } = await supabase.functions.invoke("enrich-places", {
         body: {
-          places: placesToEnrich.map((p) => ({ id: p.id, website: p.website })),
+          places: placesToEnrich.map((p) => ({
+            id: p.id,
+            name: p.name,
+            website: p.website,
+            phone: p.phone,
+          })),
         },
       });
 
       if (error) throw error;
 
       if (data?.results) {
-        const enriched = data.results as Array<{ id: string; email?: string; instagram?: string }>;
+        const enriched = data.results as Array<{ id: string; email?: string; instagram?: string; phone?: string }>;
         const { data: userData } = await supabase.auth.getUser();
 
         for (const item of enriched) {
-          if (item.email || item.instagram) {
+          if (item.email || item.instagram || item.phone) {
             // Save to place_enrichment
             if (item.email) {
               await supabase.from("place_enrichment").insert({
@@ -227,11 +233,15 @@ export default function Index() {
                 user_id: userData.user!.id,
               });
             }
-            // Persist email/instagram to places table
-            await supabase.from("places").update({
-              ...(item.email && { email: item.email }),
-              ...(item.instagram && { instagram: item.instagram }),
-            }).eq("id", item.id);
+            // Persist to places table
+            const updateData: Record<string, string> = {};
+            if (item.email) updateData.email = item.email;
+            if (item.instagram) updateData.instagram = item.instagram;
+            if (item.phone) updateData.phone = item.phone;
+
+            if (Object.keys(updateData).length > 0) {
+              await supabase.from("places").update(updateData).eq("id", item.id);
+            }
           }
         }
 
@@ -243,13 +253,16 @@ export default function Index() {
               ...r,
               ...(match.email && { email: match.email }),
               ...(match.instagram && { instagram: match.instagram }),
-              enrichment_status: (match.email || match.instagram) ? "enriched" as const : r.enrichment_status,
+              ...(match.phone && { phone: match.phone }),
+              enrichment_status: (match.email || match.instagram || match.phone) ? "enriched" as const : r.enrichment_status,
             };
           })
         );
 
         const emailCount = enriched.filter((e) => e.email).length;
-        toast.success(`${emailCount} e-mails encontrados!`);
+        const igCount = enriched.filter((e) => e.instagram).length;
+        const phoneCount = enriched.filter((e) => e.phone).length;
+        toast.success(`Encontrados: ${emailCount} emails, ${igCount} instagrams, ${phoneCount} telefones!`);
         loadStats();
       }
     } catch (error: any) {
