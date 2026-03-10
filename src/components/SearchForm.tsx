@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import {
   Search, MapPin, Star, Globe, Hash, SlidersHorizontal,
   ChevronDown, ChevronUp, MessageSquare, Phone, Mail,
@@ -225,6 +225,32 @@ export function SearchForm({ onSearch, isLoading }: SearchFormProps) {
     if (!districtSearch) return districts.slice(0, 50);
     return districts.filter((d) => d.toLowerCase().startsWith(districtSearch.toLowerCase())).slice(0, 50);
   }, [districts, districtSearch]);
+
+  const handleCepChange = useCallback(async (value: string) => {
+    const numeric = value.replace(/\D/g, '');
+    const formatted = numeric.length > 5 ? `${numeric.slice(0, 5)}-${numeric.slice(5, 8)}` : numeric;
+    setParams((p) => ({ ...p, cep: formatted }));
+
+    if (numeric.length === 8) {
+      try {
+        const res = await fetch(`https://viacep.com.br/ws/${numeric}/json/`);
+        const data = await res.json();
+        if (!data.erro) {
+          setParams((p) => ({
+            ...p,
+            state: data.uf || p.state,
+            city: data.localidade || p.city,
+            neighborhood: data.bairro || p.neighborhood,
+            location: data.localidade || p.location,
+          }));
+          setCitySearch("");
+          setDistrictSearch("");
+        }
+      } catch {
+        // silently fail
+      }
+    }
+  }, []);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -471,10 +497,11 @@ export function SearchForm({ onSearch, isLoading }: SearchFormProps) {
             <Input
               placeholder="Ex: 01001-000"
               value={params.cep}
-              onChange={(e) => setParams((p) => ({ ...p, cep: e.target.value }))}
+              onChange={(e) => handleCepChange(e.target.value)}
               className="bg-secondary border-border"
+              maxLength={9}
             />
-            <p className="text-[10px] text-muted-foreground/70">Opcional - refina a localização</p>
+            <p className="text-[10px] text-muted-foreground/70">Opcional - preenche estado, cidade e bairro automaticamente</p>
           </div>
         </div>
 
