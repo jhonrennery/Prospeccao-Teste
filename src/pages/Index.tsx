@@ -197,7 +197,7 @@ export default function Index() {
       if (error) throw error;
 
       if (data?.results) {
-        const enriched = data.results as Array<{ id: string; email?: string }>;
+        const enriched = data.results as Array<{ id: string; email?: string; instagram?: string }>;
         const { data: userData } = await supabase.auth.getUser();
 
         for (const item of enriched) {
@@ -215,9 +215,13 @@ export default function Index() {
         setResults((prev) =>
           prev.map((r) => {
             const match = enriched.find((e) => e.id === r.id);
-            return match?.email
-              ? { ...r, email: match.email, enrichment_status: "enriched" as const }
-              : r;
+            if (!match) return r;
+            return {
+              ...r,
+              ...(match.email && { email: match.email }),
+              ...(match.instagram && { instagram: match.instagram }),
+              enrichment_status: (match.email || match.instagram) ? "enriched" as const : r.enrichment_status,
+            };
           })
         );
 
