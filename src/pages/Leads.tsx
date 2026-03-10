@@ -30,6 +30,8 @@ interface Lead {
     rating: number | null;
     category: string | null;
     google_maps_url: string | null;
+    email: string | null;
+    instagram: string | null;
   };
 }
 
