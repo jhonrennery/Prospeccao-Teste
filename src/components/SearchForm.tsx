@@ -216,10 +216,15 @@ export function SearchForm({ onSearch, isLoading }: SearchFormProps) {
   const { cities, districts, loadingCities, loadingDistricts } = useBrazilianLocations(params.state, params.city);
 
   const [citySearch, setCitySearch] = useState("");
+  const [districtSearch, setDistrictSearch] = useState("");
   const filteredCities = useMemo(() => {
     if (!citySearch) return cities.slice(0, 50);
-    return cities.filter((c) => c.toLowerCase().includes(citySearch.toLowerCase())).slice(0, 50);
+    return cities.filter((c) => c.toLowerCase().startsWith(citySearch.toLowerCase())).slice(0, 50);
   }, [cities, citySearch]);
+  const filteredDistricts = useMemo(() => {
+    if (!districtSearch) return districts.slice(0, 50);
+    return districts.filter((d) => d.toLowerCase().startsWith(districtSearch.toLowerCase())).slice(0, 50);
+  }, [districts, districtSearch]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
