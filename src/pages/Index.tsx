@@ -155,17 +155,22 @@ export default function Index() {
           .update({ status: "completed", total_found: filtered.length })
           .eq("id", job.id);
 
-        const mapped: PlaceResult[] = filtered.map((p) => ({
-          id: p.id,
-          name: p.name,
-          address: p.address || undefined,
-          phone: p.phone || undefined,
-          website: p.website || undefined,
-          rating: p.rating ? Number(p.rating) : undefined,
-          total_reviews: p.total_reviews || undefined,
-          category: p.category || undefined,
-          google_maps_url: p.google_maps_url || undefined,
-        }));
+        const mapped: PlaceResult[] = filtered.map((p) => {
+          const extras = scrapedExtras.get(p.place_id || '');
+          return {
+            id: p.id,
+            name: p.name,
+            address: p.address || undefined,
+            phone: p.phone || undefined,
+            website: p.website || undefined,
+            rating: p.rating ? Number(p.rating) : undefined,
+            total_reviews: p.total_reviews || undefined,
+            category: p.category || undefined,
+            google_maps_url: p.google_maps_url || undefined,
+            email: extras?.email || undefined,
+            instagram: extras?.instagram || undefined,
+          };
+        });
 
         setResults(mapped);
         toast.success(`${mapped.length} empresas encontradas!`);
