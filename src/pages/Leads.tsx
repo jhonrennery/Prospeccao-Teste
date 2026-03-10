@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import {
   Users, Phone, Globe, MapPin, Star, Trash2,
-  Search, ExternalLink,
+  Search, ExternalLink, Mail, Instagram,
 } from "lucide-react";
 import { toast } from "sonner";
 
