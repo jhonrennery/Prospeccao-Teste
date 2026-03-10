@@ -130,7 +130,7 @@ Deno.serve(async (req) => {
           },
           {
             role: 'user',
-            content: `Extraia até ${max_results} "${segment}" de "${location}":\n\n${content}`,
+            content: `Extraia até ${max_results} "${segment}" de "${location}". Inclua email e Instagram quando disponíveis:\n\n${content}`,
           },
         ],
         tools: [{
