@@ -146,7 +146,7 @@ Deno.serve(async (req) => {
                   items: {
                     type: 'object',
                     properties: {
-                      name: { type: 'object', properties: {}, additionalProperties: true },
+                      name: { type: 'string' },
                       address: { type: 'string' },
                       phone: { type: 'string' },
                       website: { type: 'string' },
@@ -155,7 +155,7 @@ Deno.serve(async (req) => {
                       rating: { type: 'number' },
                       total_reviews: { type: 'number' },
                       category: { type: 'string' },
-                    }.name = { type: 'string' },
+                    },
                     required: ['name'],
                     additionalProperties: false,
                   },
