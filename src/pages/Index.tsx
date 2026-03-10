@@ -85,7 +85,15 @@ export default function Index() {
 
       if (error) throw error;
 
+      // Store email/instagram from scrape separately (not in places table)
+      const scrapedExtras = new Map<string, { email?: string; instagram?: string }>();
       if (data?.places && data.places.length > 0) {
+        for (const p of data.places) {
+          if (p.email || p.instagram) {
+            scrapedExtras.set(p.place_id, { email: p.email, instagram: p.instagram });
+          }
+        }
+
         // Save places to database
         const placesToInsert = data.places.map((p: any) => ({
           search_job_id: job.id,
