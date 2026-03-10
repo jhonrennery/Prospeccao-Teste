@@ -1,0 +1,1 @@
+ALTER TABLE public.places ADD COLUMN email text, ADD COLUMN instagram text;

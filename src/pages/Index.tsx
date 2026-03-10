@@ -107,6 +107,8 @@ export default function Index() {
           total_reviews: p.total_reviews,
           category: p.category,
           google_maps_url: p.google_maps_url,
+          email: p.email || null,
+          instagram: p.instagram || null,
         }));
 
         const { data: savedPlaces, error: saveError } = await supabase
@@ -214,14 +216,22 @@ export default function Index() {
         const { data: userData } = await supabase.auth.getUser();
 
         for (const item of enriched) {
-          if (item.email) {
-            await supabase.from("place_enrichment").insert({
-              place_id: item.id,
-              email: item.email,
-              confidence_score: 0.8,
-              source: "website_scrape",
-              user_id: userData.user!.id,
-            });
+          if (item.email || item.instagram) {
+            // Save to place_enrichment
+            if (item.email) {
+              await supabase.from("place_enrichment").insert({
+                place_id: item.id,
+                email: item.email,
+                confidence_score: 0.8,
+                source: "website_scrape",
+                user_id: userData.user!.id,
+              });
+            }
+            // Persist email/instagram to places table
+            await supabase.from("places").update({
+              ...(item.email && { email: item.email }),
+              ...(item.instagram && { instagram: item.instagram }),
+            }).eq("id", item.id);
           }
         }
 
