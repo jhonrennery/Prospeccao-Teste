@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import {
   Search, MapPin, Star, Globe, Hash, SlidersHorizontal,
   ChevronDown, ChevronUp, MessageSquare, Phone, Mail,
