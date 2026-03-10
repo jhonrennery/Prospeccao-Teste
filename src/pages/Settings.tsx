@@ -6,24 +6,37 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import {
-  Settings, User, Bell, Shield, Palette, LogOut, Save, Mail, Phone,
+  Settings, User, Bell, Shield, Palette, LogOut, Save, Mail, Eye,
 } from "lucide-react";
 import { toast } from "sonner";
 
 export default function SettingsPage() {
   const [user, setUser] = useState<{ email: string; id: string } | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [displayName, setDisplayName] = useState("");
   const [notifyEmail, setNotifyEmail] = useState(true);
   const [darkMode, setDarkMode] = useState(false);
   const [autoEnrich, setAutoEnrich] = useState(true);
   const [defaultMaxResults, setDefaultMaxResults] = useState("50");
+  const [copyProtection, setCopyProtection] = useState(true);
+  const [screenshotProtection, setScreenshotProtection] = useState(true);
+  const [watermark, setWatermark] = useState(true);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
+    supabase.auth.getUser().then(async ({ data }) => {
       if (data.user) {
         setUser({ email: data.user.email || "", id: data.user.id });
         setDisplayName(data.user.user_metadata?.display_name || "");
+
+        // Check admin role
+        const { data: roleData } = await supabase
+          .from("user_roles")
+          .select("role")
+          .eq("user_id", data.user.id)
+          .eq("role", "admin")
+          .maybeSingle();
+        setIsAdmin(!!roleData);
       }
     });
 
@@ -36,6 +49,9 @@ export default function SettingsPage() {
         setDarkMode(parsed.darkMode ?? false);
         setAutoEnrich(parsed.autoEnrich ?? true);
         setDefaultMaxResults(parsed.defaultMaxResults ?? "50");
+        setCopyProtection(parsed.copyProtection ?? true);
+        setScreenshotProtection(parsed.screenshotProtection ?? true);
+        setWatermark(parsed.watermark ?? true);
       } catch {}
     }
   }, []);
@@ -43,7 +59,6 @@ export default function SettingsPage() {
   const handleSave = async () => {
     setSaving(true);
 
-    // Save display name to auth metadata
     const { error } = await supabase.auth.updateUser({
       data: { display_name: displayName },
     });
@@ -51,12 +66,14 @@ export default function SettingsPage() {
     if (error) {
       toast.error("Erro ao salvar perfil");
     } else {
-      // Save preferences locally
       localStorage.setItem(
         "prospect_settings",
-        JSON.stringify({ notifyEmail, darkMode, autoEnrich, defaultMaxResults })
+        JSON.stringify({
+          notifyEmail, darkMode, autoEnrich, defaultMaxResults,
+          copyProtection, screenshotProtection, watermark,
+        })
       );
-      toast.success("Configurações salvas com sucesso!");
+      toast.success("Configurações salvas! Recarregue a página para aplicar as proteções.");
     }
 
     setSaving(false);
@@ -94,7 +111,6 @@ export default function SettingsPage() {
           <h2 className="font-display text-sm font-semibold text-foreground">Perfil</h2>
         </div>
         <Separator />
-
         <div className="grid gap-4">
           <div className="space-y-2">
             <Label className="text-xs text-muted-foreground uppercase tracking-wider">Email</Label>
@@ -103,7 +119,6 @@ export default function SettingsPage() {
               {user?.email || "—"}
             </div>
           </div>
-
           <div className="space-y-2">
             <Label className="text-xs text-muted-foreground uppercase tracking-wider">Nome de exibição</Label>
             <Input
@@ -123,7 +138,6 @@ export default function SettingsPage() {
           <h2 className="font-display text-sm font-semibold text-foreground">Prospecção</h2>
         </div>
         <Separator />
-
         <div className="grid gap-4">
           <div className="space-y-2">
             <Label className="text-xs text-muted-foreground uppercase tracking-wider">
@@ -141,7 +155,6 @@ export default function SettingsPage() {
               Quantidade padrão de resultados por busca (10-200)
             </p>
           </div>
-
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-foreground">Enriquecimento automático</p>
@@ -161,7 +174,6 @@ export default function SettingsPage() {
           <h2 className="font-display text-sm font-semibold text-foreground">Notificações</h2>
         </div>
         <Separator />
-
         <div className="flex items-center justify-between">
           <div>
             <p className="text-sm text-foreground">Notificações por email</p>
@@ -173,6 +185,49 @@ export default function SettingsPage() {
         </div>
       </section>
 
+      {/* Protection Settings - Admin Only */}
+      {isAdmin && (
+        <section className="glass-card p-5 space-y-4 border border-primary/20">
+          <div className="flex items-center gap-2">
+            <Eye className="h-4 w-4 text-primary" />
+            <h2 className="font-display text-sm font-semibold text-foreground">Proteções</h2>
+            <span className="text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded-full font-medium">
+              Admin
+            </span>
+          </div>
+          <Separator />
+          <div className="grid gap-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-foreground">Proteção contra cópia</p>
+                <p className="text-[11px] text-muted-foreground">
+                  Bloqueia Ctrl+C, clique direito, seleção de texto e arrastar
+                </p>
+              </div>
+              <Switch checked={copyProtection} onCheckedChange={setCopyProtection} />
+            </div>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-foreground">Bloqueio de captura de tela</p>
+                <p className="text-[11px] text-muted-foreground">
+                  Bloqueia Print Screen e Win+Shift+S com alerta
+                </p>
+              </div>
+              <Switch checked={screenshotProtection} onCheckedChange={setScreenshotProtection} />
+            </div>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-foreground">Marca d'água</p>
+                <p className="text-[11px] text-muted-foreground">
+                  Exibe texto diagonal sutil sobre toda a interface
+                </p>
+              </div>
+              <Switch checked={watermark} onCheckedChange={setWatermark} />
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* Security */}
       <section className="glass-card p-5 space-y-4">
         <div className="flex items-center gap-2">
@@ -180,7 +235,6 @@ export default function SettingsPage() {
           <h2 className="font-display text-sm font-semibold text-foreground">Segurança</h2>
         </div>
         <Separator />
-
         <div className="flex items-center justify-between">
           <div>
             <p className="text-sm text-foreground">Redefinir senha</p>
@@ -196,15 +250,9 @@ export default function SettingsPage() {
 
       {/* Actions */}
       <div className="flex items-center justify-between pt-2">
-        <Button
-          variant="destructive"
-          size="sm"
-          onClick={handleLogout}
-          className="text-xs"
-        >
+        <Button variant="destructive" size="sm" onClick={handleLogout} className="text-xs">
           <LogOut className="h-3.5 w-3.5 mr-1.5" /> Sair da conta
         </Button>
-
         <Button onClick={handleSave} disabled={saving} size="sm">
           <Save className="h-3.5 w-3.5 mr-1.5" />
           {saving ? "Salvando..." : "Salvar configurações"}
