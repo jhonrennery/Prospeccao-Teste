@@ -139,7 +139,15 @@ export function ResultsTable({ results, onAddToLeads, onEnrich, isEnriching }: R
                     {place.email && (
                       <div className="flex items-center gap-1 text-xs text-primary">
                         <Mail className="h-3 w-3" />
-                        {place.email}
+                        <a href={`mailto:${place.email}`} className="hover:underline">{place.email}</a>
+                      </div>
+                    )}
+                    {place.instagram && (
+                      <div className="flex items-center gap-1 text-xs text-pink-500">
+                        <Instagram className="h-3 w-3" />
+                        <a href={`https://instagram.com/${place.instagram.replace('@', '')}`} target="_blank" rel="noopener noreferrer" className="hover:underline">
+                          {place.instagram}
+                        </a>
                       </div>
                     )}
                   </div>
