@@ -494,14 +494,33 @@ export function SearchForm({ onSearch, isLoading }: SearchFormProps) {
           {/* CEP */}
           <div className="space-y-2">
             <Label className="text-muted-foreground text-xs uppercase tracking-wider">CEP</Label>
-            <Input
-              placeholder="Ex: 01001-000"
-              value={params.cep}
-              onChange={(e) => handleCepChange(e.target.value)}
-              className="bg-secondary border-border"
-              maxLength={9}
-            />
-            <p className="text-[10px] text-muted-foreground/70">Opcional - preenche estado, cidade e bairro automaticamente</p>
+            {params.state === "SE" ? (
+              <Select
+                value={params.cep}
+                onValueChange={(v) => handleCepChange(v === "all" ? "" : v)}
+              >
+                <SelectTrigger className="bg-secondary border-border">
+                  <SelectValue placeholder="Selecione o CEP" />
+                </SelectTrigger>
+                <SelectContent className="max-h-72">
+                  <SelectItem value="all">Todos os CEPs</SelectItem>
+                  {sergipeCeps.map((c) => (
+                    <SelectItem key={c.cep} value={c.cep}>{c.cep} - {c.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            ) : (
+              <Input
+                placeholder="Ex: 01001-000"
+                value={params.cep}
+                onChange={(e) => handleCepChange(e.target.value)}
+                className="bg-secondary border-border"
+                maxLength={9}
+              />
+            )}
+            <p className="text-[10px] text-muted-foreground/70">
+              {params.state === "SE" ? "Selecione um CEP de Sergipe ou digite manualmente" : "Opcional - preenche estado, cidade e bairro automaticamente"}
+            </p>
           </div>
         </div>
 
