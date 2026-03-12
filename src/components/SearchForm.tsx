@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { useBrazilianLocations } from "@/hooks/useBrazilianLocations";
+import { cepsByState } from "@/data/brazilianCeps";
 
 interface SearchFormProps {
   onSearch: (params: SearchParams) => void;
@@ -188,106 +189,7 @@ const languageOptions = [
   { value: "es", label: "Español" },
 ];
 
-const sergipeCeps = [
-  { cep: "49000-000", label: "Aracaju - Centro" },
-  { cep: "49001-000", label: "Aracaju - Siqueira Campos" },
-  { cep: "49002-000", label: "Aracaju - São José" },
-  { cep: "49003-000", label: "Aracaju - Santo Antônio" },
-  { cep: "49004-000", label: "Aracaju - Getúlio Vargas" },
-  { cep: "49005-000", label: "Aracaju - Pereira Lobo" },
-  { cep: "49006-000", label: "Aracaju - Suíssa" },
-  { cep: "49007-000", label: "Aracaju - Ponto Novo" },
-  { cep: "49008-000", label: "Aracaju - Salgado Filho" },
-  { cep: "49009-000", label: "Aracaju - Cirurgia" },
-  { cep: "49010-000", label: "Aracaju - 13 de Julho" },
-  { cep: "49015-000", label: "Aracaju - Grageru" },
-  { cep: "49020-000", label: "Aracaju - Jardins" },
-  { cep: "49025-000", label: "Aracaju - Luzia" },
-  { cep: "49030-000", label: "Aracaju - Inácio Barbosa" },
-  { cep: "49035-000", label: "Aracaju - Atalaia" },
-  { cep: "49037-000", label: "Aracaju - Coroa do Meio" },
-  { cep: "49040-000", label: "Aracaju - Farolândia" },
-  { cep: "49042-000", label: "Aracaju - Jabotiana" },
-  { cep: "49045-000", label: "Aracaju - América" },
-  { cep: "49047-000", label: "Aracaju - Ponto Novo" },
-  { cep: "49048-000", label: "Aracaju - Dezoito do Forte" },
-  { cep: "49050-000", label: "Aracaju - Industrial" },
-  { cep: "49055-000", label: "Aracaju - Santos Dumont" },
-  { cep: "49060-000", label: "Aracaju - Novo Paraíso" },
-  { cep: "49065-000", label: "Aracaju - São Conrado" },
-  { cep: "49066-000", label: "Aracaju - Santa Maria" },
-  { cep: "49067-000", label: "Aracaju - 17 de Março" },
-  { cep: "49069-000", label: "Aracaju - Orlando Dantas" },
-  { cep: "49070-000", label: "Aracaju - Augusto Franco" },
-  { cep: "49075-000", label: "Aracaju - Bugio" },
-  { cep: "49080-000", label: "Aracaju - José Conrado de Araújo" },
-  { cep: "49085-000", label: "Aracaju - Olaria" },
-  { cep: "49090-000", label: "Aracaju - Mosqueiro" },
-  { cep: "49095-000", label: "Aracaju - Zona de Expansão" },
-  { cep: "49100-000", label: "São Cristóvão" },
-  { cep: "49120-000", label: "Itaporanga d'Ajuda" },
-  { cep: "49130-000", label: "Estância" },
-  { cep: "49140-000", label: "Lagarto" },
-  { cep: "49145-000", label: "Riachão do Dantas" },
-  { cep: "49148-000", label: "Simão Dias" },
-  { cep: "49150-000", label: "Tobias Barreto" },
-  { cep: "49155-000", label: "Poço Verde" },
-  { cep: "49160-000", label: "Itabaianinha" },
-  { cep: "49165-000", label: "Tomar do Geru" },
-  { cep: "49170-000", label: "Cristinápolis" },
-  { cep: "49175-000", label: "Umbaúba" },
-  { cep: "49180-000", label: "Indiaroba" },
-  { cep: "49190-000", label: "Santa Luzia do Itanhy" },
-  { cep: "49195-000", label: "Boquim" },
-  { cep: "49200-000", label: "Salgado" },
-  { cep: "49205-000", label: "Pedrinhas" },
-  { cep: "49210-000", label: "Arauá" },
-  { cep: "49250-000", label: "N. Sra. das Dores" },
-  { cep: "49260-000", label: "Capela" },
-  { cep: "49270-000", label: "Siriri" },
-  { cep: "49280-000", label: "Rosário do Catete" },
-  { cep: "49300-000", label: "Maruim" },
-  { cep: "49310-000", label: "Santo Amaro das Brotas" },
-  { cep: "49320-000", label: "Riachuelo" },
-  { cep: "49330-000", label: "Laranjeiras" },
-  { cep: "49340-000", label: "Divina Pastora" },
-  { cep: "49350-000", label: "Itabaiana" },
-  { cep: "49360-000", label: "Areia Branca" },
-  { cep: "49365-000", label: "Campo do Brito" },
-  { cep: "49370-000", label: "Macambira" },
-  { cep: "49375-000", label: "São Domingos" },
-  { cep: "49400-000", label: "Propriá" },
-  { cep: "49410-000", label: "Cedro de São João" },
-  { cep: "49415-000", label: "Telha" },
-  { cep: "49420-000", label: "Aquidabã" },
-  { cep: "49430-000", label: "Muribeca" },
-  { cep: "49440-000", label: "Neópolis" },
-  { cep: "49445-000", label: "Japoatã" },
-  { cep: "49450-000", label: "Pacatuba" },
-  { cep: "49460-000", label: "Canhoba" },
-  { cep: "49470-000", label: "Amparo de São Francisco" },
-  { cep: "49480-000", label: "Porto da Folha" },
-  { cep: "49490-000", label: "Gararu" },
-  { cep: "49500-000", label: "Itabi" },
-  { cep: "49501-000", label: "N. Sra. de Lourdes" },
-  { cep: "49506-000", label: "Monte Alegre de Sergipe" },
-  { cep: "49510-000", label: "N. Sra. da Glória" },
-  { cep: "49520-000", label: "Feira Nova" },
-  { cep: "49530-000", label: "Graccho Cardoso" },
-  { cep: "49560-000", label: "Canindé de São Francisco" },
-  { cep: "49570-000", label: "Poço Redondo" },
-  { cep: "49580-000", label: "N. Sra. Aparecida" },
-  { cep: "49590-000", label: "Carira" },
-  { cep: "49600-000", label: "Frei Paulo" },
-  { cep: "49610-000", label: "Pedra Mole" },
-  { cep: "49620-000", label: "Pinhão" },
-  { cep: "49700-000", label: "Barra dos Coqueiros" },
-  { cep: "49710-000", label: "Pirambu" },
-  { cep: "49720-000", label: "Japaratuba" },
-  { cep: "49730-000", label: "Carmópolis" },
-  { cep: "49740-000", label: "General Maynard" },
-  { cep: "49900-000", label: "Nossa Senhora do Socorro" },
-];
+// CEPs are now imported from src/data/brazilianCeps.ts
 
 export function SearchForm({ onSearch, isLoading }: SearchFormProps) {
   const [showAdvanced, setShowAdvanced] = useState(false);
@@ -595,7 +497,7 @@ export function SearchForm({ onSearch, isLoading }: SearchFormProps) {
           {/* CEP */}
           <div className="space-y-2">
             <Label className="text-muted-foreground text-xs uppercase tracking-wider">CEP</Label>
-            {params.state === "SE" ? (
+            {params.state && cepsByState[params.state] ? (
               <Select
                 value={params.cep}
                 onValueChange={(v) => {
@@ -603,9 +505,9 @@ export function SearchForm({ onSearch, isLoading }: SearchFormProps) {
                     setParams((p) => ({ ...p, cep: "", neighborhood: "" }));
                     return;
                   }
-                  const found = sergipeCeps.find((c) => c.cep === v);
+                  const stateCeps = cepsByState[params.state];
+                  const found = stateCeps?.find((c) => c.cep === v);
                   if (found) {
-                    // Parse label: "Aracaju - Bairro" or "Cidade"
                     const parts = found.label.split(" - ");
                     const city = parts[0].trim();
                     const neighborhood = parts.length > 1 ? parts[1].trim() : "";
@@ -615,7 +517,6 @@ export function SearchForm({ onSearch, isLoading }: SearchFormProps) {
                       city,
                       neighborhood,
                       location: city,
-                      state: "SE",
                     }));
                     setCitySearch("");
                     setDistrictSearch("");
@@ -629,7 +530,7 @@ export function SearchForm({ onSearch, isLoading }: SearchFormProps) {
                 </SelectTrigger>
                 <SelectContent className="max-h-72">
                   <SelectItem value="all">Todos os CEPs</SelectItem>
-                  {sergipeCeps.map((c) => (
+                  {cepsByState[params.state].map((c) => (
                     <SelectItem key={c.cep} value={c.cep}>{c.cep} - {c.label}</SelectItem>
                   ))}
                 </SelectContent>
@@ -644,7 +545,7 @@ export function SearchForm({ onSearch, isLoading }: SearchFormProps) {
               />
             )}
             <p className="text-[10px] text-muted-foreground/70">
-              {params.state === "SE" ? "Selecione um CEP de Sergipe ou digite manualmente" : "Opcional - preenche estado, cidade e bairro automaticamente"}
+              {params.state && cepsByState[params.state] ? "Selecione um CEP ou digite manualmente" : "Opcional - preenche estado, cidade e bairro automaticamente"}
             </p>
           </div>
         </div>
