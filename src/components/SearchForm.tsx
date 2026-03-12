@@ -598,7 +598,31 @@ export function SearchForm({ onSearch, isLoading }: SearchFormProps) {
             {params.state === "SE" ? (
               <Select
                 value={params.cep}
-                onValueChange={(v) => handleCepChange(v === "all" ? "" : v)}
+                onValueChange={(v) => {
+                  if (v === "all") {
+                    setParams((p) => ({ ...p, cep: "", neighborhood: "" }));
+                    return;
+                  }
+                  const found = sergipeCeps.find((c) => c.cep === v);
+                  if (found) {
+                    // Parse label: "Aracaju - Bairro" or "Cidade"
+                    const parts = found.label.split(" - ");
+                    const city = parts[0].trim();
+                    const neighborhood = parts.length > 1 ? parts[1].trim() : "";
+                    setParams((p) => ({
+                      ...p,
+                      cep: v,
+                      city,
+                      neighborhood,
+                      location: city,
+                      state: "SE",
+                    }));
+                    setCitySearch("");
+                    setDistrictSearch("");
+                  } else {
+                    handleCepChange(v);
+                  }
+                }}
               >
                 <SelectTrigger className="bg-secondary border-border">
                   <SelectValue placeholder="Selecione o CEP" />
