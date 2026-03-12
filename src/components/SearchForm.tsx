@@ -497,7 +497,7 @@ export function SearchForm({ onSearch, isLoading }: SearchFormProps) {
           {/* CEP */}
           <div className="space-y-2">
             <Label className="text-muted-foreground text-xs uppercase tracking-wider">CEP</Label>
-            {params.state === "SE" ? (
+            {params.state && cepsByState[params.state] ? (
               <Select
                 value={params.cep}
                 onValueChange={(v) => {
@@ -505,9 +505,9 @@ export function SearchForm({ onSearch, isLoading }: SearchFormProps) {
                     setParams((p) => ({ ...p, cep: "", neighborhood: "" }));
                     return;
                   }
-                  const found = sergipeCeps.find((c) => c.cep === v);
+                  const stateCeps = cepsByState[params.state];
+                  const found = stateCeps?.find((c) => c.cep === v);
                   if (found) {
-                    // Parse label: "Aracaju - Bairro" or "Cidade"
                     const parts = found.label.split(" - ");
                     const city = parts[0].trim();
                     const neighborhood = parts.length > 1 ? parts[1].trim() : "";
@@ -517,7 +517,6 @@ export function SearchForm({ onSearch, isLoading }: SearchFormProps) {
                       city,
                       neighborhood,
                       location: city,
-                      state: "SE",
                     }));
                     setCitySearch("");
                     setDistrictSearch("");
@@ -531,7 +530,7 @@ export function SearchForm({ onSearch, isLoading }: SearchFormProps) {
                 </SelectTrigger>
                 <SelectContent className="max-h-72">
                   <SelectItem value="all">Todos os CEPs</SelectItem>
-                  {sergipeCeps.map((c) => (
+                  {cepsByState[params.state].map((c) => (
                     <SelectItem key={c.cep} value={c.cep}>{c.cep} - {c.label}</SelectItem>
                   ))}
                 </SelectContent>
@@ -546,7 +545,7 @@ export function SearchForm({ onSearch, isLoading }: SearchFormProps) {
               />
             )}
             <p className="text-[10px] text-muted-foreground/70">
-              {params.state === "SE" ? "Selecione um CEP de Sergipe ou digite manualmente" : "Opcional - preenche estado, cidade e bairro automaticamente"}
+              {params.state && cepsByState[params.state] ? "Selecione um CEP ou digite manualmente" : "Opcional - preenche estado, cidade e bairro automaticamente"}
             </p>
           </div>
         </div>
