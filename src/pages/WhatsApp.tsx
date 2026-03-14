@@ -231,22 +231,22 @@ export default function WhatsAppPage() {
     <div className="space-y-6">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div>
-          <h1 className="font-display text-2xl font-bold text-foreground flex items-center gap-2">
-            <Smartphone className="h-6 w-6 text-primary" /> WhatsApp
+          <h1 className="font-display flex items-center gap-2 text-2xl font-bold text-foreground">
+            <Smartphone className="h-6 w-6 text-success" /> WhatsApp
           </h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Escaneie o QR Code, acompanhe o status da sessão e veja mensagens enviadas e recebidas.
+          <p className="mt-1 text-sm text-muted-foreground">
+            Layout inspirado no WhatsApp Web com QR centralizado, conversas na lateral e painel de mensagens.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
           <Button variant="outline" onClick={() => loadSessions(true)} disabled={loading}>
-            <RefreshCw className="h-4 w-4 mr-2" /> Atualizar
+            <RefreshCw className="mr-2 h-4 w-4" /> Atualizar
           </Button>
-          <Button onClick={handleConnect} disabled={connecting}>
-            <Wifi className="h-4 w-4 mr-2" /> {connecting ? "Conectando..." : "Gerar QR / Conectar"}
+          <Button className="bg-success text-white hover:bg-success/90" onClick={handleConnect} disabled={connecting}>
+            <Wifi className="mr-2 h-4 w-4" /> {connecting ? "Conectando..." : "Gerar QR / Conectar"}
           </Button>
           <Button variant="destructive" onClick={handleDisconnect} disabled={!selectedSessionId}>
-            <WifiOff className="h-4 w-4 mr-2" /> Desconectar
+            <WifiOff className="mr-2 h-4 w-4" /> Desconectar
           </Button>
         </div>
       </div>
@@ -256,7 +256,7 @@ export default function WhatsAppPage() {
           <CardContent className="p-4 text-sm text-warning">
             {gatewayError}
             {!gatewayStatus.available && (
-              <span className="block mt-2 text-xs text-muted-foreground">
+              <span className="mt-2 block text-xs text-muted-foreground">
                 Para ambiente publicado, configure `VITE_WHATSAPP_GATEWAY_URL` apontando para o backend do WhatsApp.
               </span>
             )}
@@ -264,192 +264,223 @@ export default function WhatsAppPage() {
         </Card>
       )}
 
-      <div className="grid gap-4 xl:grid-cols-[360px_minmax(0,1fr)]">
-        <div className="space-y-4">
-          <Card className="glass-card border-border/60">
-            <CardHeader className="pb-4">
-              <CardTitle className="text-lg flex items-center gap-2">
-                <QrCode className="h-5 w-5 text-primary" /> Sessão atual
-              </CardTitle>
-              <CardDescription>
-                {selectedSession ? `Sessão: ${selectedSession.name}` : "Nenhuma sessão criada ainda."}
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {selectedSession ? (
-                <>
-                  <div className="flex items-center justify-between gap-3">
-                    <Badge className={statusMap[selectedSession.session_status].className}>
-                      {statusMap[selectedSession.session_status].label}
-                    </Badge>
-                    <span className="text-xs text-muted-foreground">
-                      Ultima atividade: {formatDateTime(selectedSession.last_seen_at)}
-                    </span>
-                  </div>
+      <div className="overflow-hidden rounded-[28px] border border-border/60 bg-[#e7ddd6] shadow-[0_30px_80px_-40px_rgba(0,0,0,0.4)]">
+        <div className="grid min-h-[780px] xl:grid-cols-[380px_minmax(0,1fr)]">
+          <aside className="border-r border-black/5 bg-[#f7f5f3]">
+            <div className="border-b border-black/5 bg-[#f0efec] px-5 py-4">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <div className="text-sm font-semibold text-foreground">{selectedSession?.name || "Sessao principal"}</div>
+                  <div className="text-xs text-muted-foreground">{selectedSession?.phone_number || "WhatsApp ainda nao conectado"}</div>
+                </div>
+                {selectedSession && (
+                  <Badge className={statusMap[selectedSession.session_status].className}>
+                    {statusMap[selectedSession.session_status].label}
+                  </Badge>
+                )}
+              </div>
+            </div>
 
-                  <div className="rounded-lg border border-dashed border-border bg-secondary/40 p-4 text-center">
-                    {selectedSession.qr_data_url ? (
-                      <img
-                        src={selectedSession.qr_data_url}
-                        alt="QR Code do WhatsApp"
-                        className="mx-auto h-64 w-64 rounded-md bg-white p-3 shadow-sm"
-                      />
-                    ) : (
-                      <div className="flex h-64 flex-col items-center justify-center gap-2 text-muted-foreground">
-                        <QrCode className="h-10 w-10 text-primary/60" />
-                        <p className="text-sm">
-                          {selectedSession.session_status === "connected"
-                            ? "Sessão conectada. Não há QR pendente."
-                            : "Clique em conectar para gerar um novo QR Code."}
-                        </p>
+            <div className="border-b border-black/5 bg-white/80 px-4 py-3">
+              <div className="rounded-2xl bg-[#f0efec] px-4 py-3">
+                <div className="flex items-start gap-3">
+                  <div className="mt-0.5 rounded-full bg-success/15 p-2 text-success">
+                    <MessageSquare className="h-4 w-4" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="text-sm font-medium text-foreground">Conversas sincronizadas</div>
+                    <div className="text-xs text-muted-foreground">{chats.length} chats gravados no banco</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <ScrollArea className="h-[640px]">
+              <div className="space-y-1 p-2">
+                {chats.length === 0 ? (
+                  <div className="rounded-2xl border border-dashed border-border/70 bg-white/70 px-5 py-8 text-center text-sm text-muted-foreground">
+                    Nenhuma conversa sincronizada ainda.
+                  </div>
+                ) : (
+                  chats.map((chat) => {
+                    const isActive = selectedChatJid === chat.chat_jid;
+                    return (
+                      <button
+                        key={chat.id}
+                        type="button"
+                        onClick={() => setSelectedChatJid(chat.chat_jid)}
+                        className={`flex w-full items-start gap-3 rounded-2xl px-3 py-3 text-left transition-colors ${
+                          isActive ? "bg-[#efeae2]" : "hover:bg-[#f2f2f2]"
+                        }`}
+                      >
+                        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-success/15 text-success">
+                          <MessageSquare className="h-5 w-5" />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center justify-between gap-3">
+                            <div className="truncate text-sm font-medium text-foreground">{getChatTitle(chat)}</div>
+                            <div className="shrink-0 text-[11px] text-muted-foreground">{formatDateTime(chat.last_message_at)}</div>
+                          </div>
+                          <div className="mt-1 truncate font-mono text-[11px] text-muted-foreground">{chat.chat_jid}</div>
+                          <div className="mt-1 flex items-center justify-between gap-2">
+                            <div className="text-xs text-muted-foreground">{chat.is_group ? "Grupo" : "Direto"}</div>
+                            {chat.unread_count > 0 && (
+                              <div className="flex h-5 min-w-5 items-center justify-center rounded-full bg-success px-1.5 text-[10px] font-semibold text-white">
+                                {chat.unread_count}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </button>
+                    );
+                  })
+                )}
+              </div>
+            </ScrollArea>
+          </aside>
+
+          <section className="flex min-h-[780px] flex-col bg-[#efeae2]">
+            <div className="border-b border-black/5 bg-[#f0efec] px-5 py-4">
+              <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                <div>
+                  <div className="text-sm font-semibold text-foreground">
+                    {selectedChat ? getChatTitle(selectedChat) : "Escaneie o QR Code para conectar"}
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    {selectedChat
+                      ? selectedChat.chat_jid
+                      : selectedSession?.session_status === "connected"
+                        ? "Sessao ativa. Selecione uma conversa para acompanhar as mensagens."
+                        : "A experiencia abaixo foi organizada para ficar parecida com o WhatsApp Web."}
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap gap-2">
+                  <Input
+                    placeholder="Chat JID manual"
+                    value={newChatJid}
+                    onChange={(event) => setNewChatJid(event.target.value)}
+                    className="h-10 w-full bg-white lg:w-[280px]"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {selectedSession?.qr_data_url || (!selectedChat && selectedSession?.session_status !== "connected") ? (
+              <div className="flex flex-1 items-center justify-center p-8">
+                <div className="mx-auto flex w-full max-w-3xl items-center justify-center">
+                  <div className="w-full max-w-xl rounded-[32px] border border-black/5 bg-white px-8 py-10 text-center shadow-[0_30px_60px_-35px_rgba(0,0,0,0.35)]">
+                    <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-success/12 text-success">
+                      <QrCode className="h-8 w-8" />
+                    </div>
+                    <h2 className="text-2xl font-semibold text-foreground">Conecte seu WhatsApp</h2>
+                    <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-muted-foreground">
+                      Escaneie o QR Code abaixo com o seu celular. O quadro fica centralizado como area principal da experiencia, no estilo do WhatsApp Web.
+                    </p>
+
+                    <div className="mt-8 flex justify-center">
+                      {selectedSession?.qr_data_url ? (
+                        <div className="rounded-[28px] border border-border bg-white p-5 shadow-sm">
+                          <img
+                            src={selectedSession.qr_data_url}
+                            alt="QR Code do WhatsApp"
+                            className="h-72 w-72 rounded-2xl bg-white p-3"
+                          />
+                        </div>
+                      ) : (
+                        <div className="flex h-72 w-72 items-center justify-center rounded-[28px] border border-dashed border-border bg-[#f8f7f6] text-sm text-muted-foreground">
+                          Clique em "Gerar QR / Conectar"
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="mt-8 grid gap-3 text-left sm:grid-cols-3">
+                      <div className="rounded-2xl bg-[#f8f7f6] p-4">
+                        <div className="text-[11px] uppercase tracking-wide text-muted-foreground">Status</div>
+                        <div className="mt-1 text-sm font-medium text-foreground">
+                          {selectedSession ? statusMap[selectedSession.session_status].label : "Aguardando"}
+                        </div>
+                      </div>
+                      <div className="rounded-2xl bg-[#f8f7f6] p-4">
+                        <div className="text-[11px] uppercase tracking-wide text-muted-foreground">Numero</div>
+                        <div className="mt-1 text-sm font-medium text-foreground">{selectedSession?.phone_number || "-"}</div>
+                      </div>
+                      <div className="rounded-2xl bg-[#f8f7f6] p-4">
+                        <div className="text-[11px] uppercase tracking-wide text-muted-foreground">Ultima atividade</div>
+                        <div className="mt-1 text-sm font-medium text-foreground">{formatDateTime(selectedSession?.last_seen_at || null)}</div>
+                      </div>
+                    </div>
+
+                    {selectedSession?.error_message && (
+                      <div className="mt-5 rounded-2xl border border-destructive/20 bg-destructive/5 px-4 py-3 text-sm text-destructive">
+                        {selectedSession.error_message}
                       </div>
                     )}
                   </div>
+                </div>
+              </div>
+            ) : (
+              <>
+                <div
+                  className="flex-1 px-6 py-6"
+                  style={{
+                    backgroundImage:
+                      "radial-gradient(circle at 25px 25px, rgba(255,255,255,0.35) 2px, transparent 0), linear-gradient(rgba(255,255,255,0.22), rgba(255,255,255,0.22))",
+                    backgroundSize: "50px 50px, 100% 100%",
+                  }}
+                >
+                  <ScrollArea className="h-[560px] pr-2">
+                    <div className="space-y-3">
+                      {messages.length === 0 ? (
+                        <div className="mx-auto mt-12 max-w-md rounded-[28px] bg-white/90 px-6 py-8 text-center shadow-sm">
+                          <MessageSquare className="mx-auto h-10 w-10 text-success/70" />
+                          <p className="mt-3 text-sm text-muted-foreground">
+                            Nenhuma mensagem encontrada para este chat ainda.
+                          </p>
+                        </div>
+                      ) : (
+                        messages.map((message) => (
+                          <div
+                            key={message.id}
+                            className={`max-w-[78%] rounded-[18px] px-4 py-3 text-sm shadow-sm ${
+                              message.message_direction === "outbound"
+                                ? "ml-auto bg-[#d9fdd3] text-[#111b21]"
+                                : "bg-white text-[#111b21]"
+                            }`}
+                          >
+                            <div className="mb-1 text-[11px] uppercase tracking-wide text-muted-foreground">
+                              {message.message_direction === "outbound" ? "Enviado" : "Recebido"}
+                            </div>
+                            <div className="whitespace-pre-wrap break-words">
+                              {message.text_content || message.media_caption || `[${message.message_type}]`}
+                            </div>
+                            <div className="mt-2 flex items-center justify-end gap-3 text-[11px] text-muted-foreground">
+                              <span>{formatDateTime(message.sent_at || message.created_at)}</span>
+                              <span className="font-mono">{message.message_status}</span>
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </ScrollArea>
+                </div>
 
-                  <div className="space-y-2 text-sm">
-                    <div className="flex items-center justify-between gap-3">
-                      <span className="text-muted-foreground">Numero</span>
-                      <span className="font-mono text-foreground">{selectedSession.phone_number || "-"}</span>
-                    </div>
-                    <div className="flex items-center justify-between gap-3">
-                      <span className="text-muted-foreground">Device JID</span>
-                      <span className="font-mono text-[11px] text-foreground truncate max-w-[180px]">
-                        {selectedSession.device_jid || "-"}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between gap-3">
-                      <span className="text-muted-foreground">Conectado em</span>
-                      <span className="text-foreground">{formatDateTime(selectedSession.last_connected_at)}</span>
-                    </div>
+                <div className="border-t border-black/5 bg-[#f0efec] px-5 py-4">
+                  <div className="flex flex-col gap-3 lg:flex-row lg:items-end">
+                    <Textarea
+                      placeholder="Digite sua mensagem"
+                      value={newMessage}
+                      onChange={(event) => setNewMessage(event.target.value)}
+                      className="min-h-[70px] flex-1 resize-none rounded-3xl border-white bg-white px-5 py-4"
+                    />
+                    <Button className="h-[54px] rounded-full bg-success px-6 text-white hover:bg-success/90" onClick={handleSend} disabled={sending}>
+                      <Send className="mr-2 h-4 w-4" /> {sending ? "Enviando..." : "Enviar"}
+                    </Button>
                   </div>
-
-                  {selectedSession.error_message && (
-                    <div className="rounded-md border border-destructive/20 bg-destructive/5 px-3 py-2 text-xs text-destructive">
-                      {selectedSession.error_message}
-                    </div>
-                  )}
-                </>
-              ) : (
-                <div className="text-sm text-muted-foreground">Clique em conectar para criar a primeira sessão.</div>
-              )}
-            </CardContent>
-          </Card>
-
-          <Card className="glass-card border-border/60">
-            <CardHeader className="pb-4">
-              <CardTitle className="text-lg">Enviar mensagem</CardTitle>
-              <CardDescription>
-                Use um chat existente ou informe manualmente um JID como `5511999999999@s.whatsapp.net`.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <Input
-                placeholder="Chat JID manual (opcional)"
-                value={newChatJid}
-                onChange={(event) => setNewChatJid(event.target.value)}
-              />
-              <Textarea
-                placeholder="Digite sua mensagem"
-                value={newMessage}
-                onChange={(event) => setNewMessage(event.target.value)}
-                className="min-h-[110px] bg-secondary border-border"
-              />
-              <Button className="w-full" onClick={handleSend} disabled={sending}>
-                <Send className="h-4 w-4 mr-2" /> {sending ? "Enviando..." : "Enviar mensagem"}
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
-
-        <div className="grid gap-4 xl:grid-cols-[320px_minmax(0,1fr)]">
-          <Card className="glass-card border-border/60 min-h-[720px]">
-            <CardHeader className="pb-4">
-              <CardTitle className="text-lg flex items-center gap-2">
-                <MessageSquare className="h-5 w-5 text-primary" /> Conversas
-              </CardTitle>
-              <CardDescription>{chats.length} chats gravados no banco</CardDescription>
-            </CardHeader>
-            <CardContent className="pt-0 h-[620px]">
-              <ScrollArea className="h-full pr-3">
-                <div className="space-y-2">
-                  {chats.length === 0 ? (
-                    <div className="rounded-md border border-dashed border-border px-4 py-8 text-center text-sm text-muted-foreground">
-                      Nenhuma conversa sincronizada ainda.
-                    </div>
-                  ) : (
-                    chats.map((chat) => {
-                      const isActive = selectedChatJid === chat.chat_jid;
-                      return (
-                        <button
-                          key={chat.id}
-                          type="button"
-                          onClick={() => setSelectedChatJid(chat.chat_jid)}
-                          className={`w-full rounded-lg border px-3 py-3 text-left transition-colors ${
-                            isActive
-                              ? "border-primary/30 bg-primary/10"
-                              : "border-border/60 bg-secondary/20 hover:border-primary/20 hover:bg-secondary/40"
-                          }`}
-                        >
-                          <div className="flex items-center justify-between gap-3">
-                            <div className="font-medium text-sm text-foreground truncate">{getChatTitle(chat)}</div>
-                            {chat.unread_count > 0 && (
-                              <Badge variant="secondary" className="font-mono text-[10px]">
-                                {chat.unread_count}
-                              </Badge>
-                            )}
-                          </div>
-                          <div className="mt-1 text-[11px] text-muted-foreground font-mono truncate">{chat.chat_jid}</div>
-                          <div className="mt-2 text-[11px] text-muted-foreground">
-                            {chat.is_group ? "Grupo" : "Direto"} • {formatDateTime(chat.last_message_at)}
-                          </div>
-                        </button>
-                      );
-                    })
-                  )}
                 </div>
-              </ScrollArea>
-            </CardContent>
-          </Card>
-
-          <Card className="glass-card border-border/60 min-h-[720px]">
-            <CardHeader className="pb-4">
-              <CardTitle className="text-lg">Mensagens</CardTitle>
-              <CardDescription>
-                {selectedChat ? getChatTitle(selectedChat) : "Selecione uma conversa para ver entrada e saida."}
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="pt-0 h-[620px]">
-              <ScrollArea className="h-full pr-3">
-                <div className="space-y-3">
-                  {messages.length === 0 ? (
-                    <div className="rounded-md border border-dashed border-border px-4 py-8 text-center text-sm text-muted-foreground">
-                      Nenhuma mensagem encontrada para este chat.
-                    </div>
-                  ) : (
-                    messages.map((message) => (
-                      <div
-                        key={message.id}
-                        className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm shadow-sm ${
-                          message.message_direction === "outbound"
-                            ? "ml-auto bg-primary text-primary-foreground"
-                            : "bg-secondary text-foreground"
-                        }`}
-                      >
-                        <div className="text-[11px] uppercase tracking-wide opacity-75 mb-1">
-                          {message.message_direction === "outbound" ? "Enviado" : "Recebido"}
-                        </div>
-                        <div className="whitespace-pre-wrap break-words">{message.text_content || message.media_caption || `[${message.message_type}]`}</div>
-                        <div className="mt-2 flex items-center justify-between gap-3 text-[11px] opacity-75">
-                          <span>{formatDateTime(message.sent_at || message.created_at)}</span>
-                          <span className="font-mono">{message.message_status}</span>
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </ScrollArea>
-            </CardContent>
-          </Card>
+              </>
+            )}
+          </section>
         </div>
       </div>
     </div>
