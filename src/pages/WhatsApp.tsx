@@ -159,9 +159,11 @@ export default function WhatsAppPage() {
   }, [selectedSessionId, selectedChatJid]);
 
   useEffect(() => {
-    if (!gatewayStatus.available) {
+    const currentGatewayStatus = resolveGatewayStatus();
+
+    if (!currentGatewayStatus.available) {
       setLoading(false);
-      setGatewayError(gatewayStatus.reason);
+      setGatewayError(currentGatewayStatus.reason);
       return;
     }
 
@@ -172,7 +174,7 @@ export default function WhatsAppPage() {
     }, 4000);
 
     return () => window.clearInterval(interval);
-  }, [gatewayStatus.available, gatewayStatus.reason, selectedSessionId, selectedChatJid]);
+  }, [selectedSessionId, selectedChatJid]);
 
   const handleConnect = async () => {
     setConnecting(true);
