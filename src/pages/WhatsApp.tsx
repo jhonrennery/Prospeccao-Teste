@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import {
+  checkWhatsAppGatewayHealth,
+  clearWhatsAppGatewayUrl,
   connectWhatsAppSession,
   disconnectWhatsAppSession,
   getWhatsAppGatewayStatus,
@@ -8,6 +10,7 @@ import {
   listWhatsAppMessages,
   listWhatsAppSessions,
   sendWhatsAppMessage,
+  setWhatsAppGatewayUrl,
   type WhatsAppChat,
   type WhatsAppMessage,
   type WhatsAppSession,
