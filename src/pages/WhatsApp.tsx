@@ -108,7 +108,9 @@ export default function WhatsAppPage() {
   };
 
   const loadChats = async (sessionId: string) => {
-    if (!gatewayStatus.available) return;
+    const currentGatewayStatus = resolveGatewayStatus();
+    if (!currentGatewayStatus.available) return;
+
     try {
       const response = await listWhatsAppChats(sessionId);
       setGatewayError(null);
