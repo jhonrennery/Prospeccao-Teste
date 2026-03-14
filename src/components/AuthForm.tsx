@@ -34,7 +34,7 @@ export function AuthForm() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background p-4">
+    <div className="prospecting-background flex min-h-screen items-center justify-center bg-background/70 p-4">
       <div className="glass-card w-full max-w-sm p-8 space-y-6 animate-slide-in">
         <div className="text-center space-y-2">
           <div className="flex items-center justify-center gap-2 mb-4">

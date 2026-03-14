@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -16,8 +18,6 @@ input, textarea, [contenteditable="true"] {
   -ms-user-select: text;
   user-select: text;
 }
-
-@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap');
 
 @layer base {
   :root {
@@ -69,6 +69,7 @@ input, textarea, [contenteditable="true"] {
     --gradient-card: linear-gradient(180deg, hsl(0, 0%, 100%), hsl(220, 14%, 97%));
     --shadow-glow: 0 0 20px -5px hsl(28 88% 58% / 0.25);
     --shadow-card: 0 1px 3px 0 hsl(0 0% 0% / 0.06), 0 1px 2px -1px hsl(0 0% 0% / 0.06);
+    --prospecting-bg-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1600' height='1200' viewBox='0 0 1600 1200'%3E%3Cdefs%3E%3ClinearGradient id='g1' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0%25' stop-color='%23fff4eb'/%3E%3Cstop offset='100%25' stop-color='%23fde6d3'/%3E%3C/linearGradient%3E%3ClinearGradient id='g2' x1='0' y1='0' x2='0' y2='1'%3E%3Cstop offset='0%25' stop-color='%23ffb36a' stop-opacity='0.28'/%3E%3Cstop offset='100%25' stop-color='%23f97316' stop-opacity='0.08'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='1600' height='1200' fill='url(%23g1)'/%3E%3Cg opacity='0.95'%3E%3Ccircle cx='1260' cy='220' r='200' fill='%23fff1e6'/%3E%3Ccircle cx='1360' cy='190' r='120' fill='%23ffe0c2'/%3E%3Ccircle cx='220' cy='960' r='220' fill='%23fff0e1'/%3E%3C/g%3E%3Cg opacity='0.9'%3E%3Crect x='900' y='290' rx='24' ry='24' width='420' height='250' fill='white'/%3E%3Crect x='940' y='340' rx='14' ry='14' width='210' height='20' fill='%23fed7aa'/%3E%3Crect x='940' y='380' rx='14' ry='14' width='320' height='16' fill='%23ffedd5'/%3E%3Crect x='940' y='410' rx='14' ry='14' width='270' height='16' fill='%23ffedd5'/%3E%3Crect x='940' y='440' rx='14' ry='14' width='180' height='16' fill='%23ffedd5'/%3E%3Cpath d='M954 490 L1035 450 L1108 470 L1182 398 L1260 366' fill='none' stroke='%23f97316' stroke-width='10' stroke-linecap='round' stroke-linejoin='round'/%3E%3Ccircle cx='954' cy='490' r='8' fill='%23fb923c'/%3E%3Ccircle cx='1035' cy='450' r='8' fill='%23fb923c'/%3E%3Ccircle cx='1108' cy='470' r='8' fill='%23fb923c'/%3E%3Ccircle cx='1182' cy='398' r='8' fill='%23fb923c'/%3E%3Ccircle cx='1260' cy='366' r='8' fill='%23fb923c'/%3E%3C/g%3E%3Cg opacity='0.96'%3E%3Cpath d='M220 250 C320 150 470 130 590 190 C700 245 770 355 825 510 C748 575 636 618 505 618 C284 618 105 477 105 305 C105 292 107 280 110 268 Z' fill='url(%23g2)'/%3E%3Crect x='210' y='302' rx='22' ry='22' width='360' height='220' fill='white'/%3E%3Ccircle cx='290' cy='364' r='38' fill='%23ffedd5'/%3E%3Cpath d='M272 364 h36 M290 346 v36' stroke='%23f97316' stroke-width='8' stroke-linecap='round'/%3E%3Crect x='350' y='336' rx='12' ry='12' width='150' height='18' fill='%23fed7aa'/%3E%3Crect x='350' y='370' rx='12' ry='12' width='120' height='14' fill='%23ffedd5'/%3E%3Crect x='250' y='434' rx='18' ry='18' width='110' height='42' fill='%23f97316' fill-opacity='0.12'/%3E%3Crect x='382' y='434' rx='18' ry='18' width='148' height='42' fill='%23fdba74' fill-opacity='0.18'/%3E%3C/g%3E%3Cg opacity='0.7'%3E%3Cpath d='M1140 820 C1210 750 1320 742 1400 790 C1468 832 1505 901 1510 986 C1440 1034 1357 1060 1262 1060 C1112 1060 990 988 990 898 C990 872 1000 847 1019 824 Z' fill='%23fff4eb'/%3E%3Crect x='1088' y='834' width='110' height='20' rx='10' fill='%23fed7aa'/%3E%3Crect x='1088' y='872' width='240' height='14' rx='7' fill='%23ffedd5'/%3E%3Crect x='1088' y='900' width='180' height='14' rx='7' fill='%23ffedd5'/%3E%3C/g%3E%3C/svg%3E");
   }
 }
 
@@ -106,6 +107,37 @@ input, textarea, [contenteditable="true"] {
 /* Watermark overlay */
 .watermark-overlay {
   position: relative;
+}
+
+.prospecting-background {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+}
+
+.prospecting-background::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  background-image:
+    linear-gradient(180deg, hsl(28 88% 58% / 0.08), hsl(210 20% 98% / 0.86)),
+    var(--prospecting-bg-image);
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+.prospecting-background::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background:
+    radial-gradient(circle at 18% 22%, hsl(28 88% 58% / 0.12), transparent 22%),
+    radial-gradient(circle at 84% 18%, hsl(22 90% 66% / 0.12), transparent 20%),
+    radial-gradient(circle at 72% 78%, hsl(210 100% 50% / 0.05), transparent 18%);
+  pointer-events: none;
 }
 
 .watermark-overlay::after {

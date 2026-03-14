@@ -37,9 +37,9 @@ function AuthenticatedLayout() {
   })();
 
   return (
-    <div className={`flex min-h-screen bg-background ${showWatermark ? "watermark-overlay" : ""}`}>
+    <div className={`prospecting-background flex min-h-screen bg-background/70 ${showWatermark ? "watermark-overlay" : ""}`}>
       <AppSidebar />
-      <main className="flex-1 ml-14 md:ml-16 lg:ml-56 p-4 md:p-6 lg:p-8 xl:px-12 2xl:px-16">
+      <main className="flex-1 ml-14 md:ml-16 lg:ml-56 p-4 md:p-6 lg:p-8 xl:px-12 2xl:px-16 backdrop-blur-[1px]">
         <div className="flex justify-end mb-4">
           <Button variant="ghost" size="sm" onClick={handleLogout} className="text-muted-foreground">
             <LogOut className="h-4 w-4 mr-1" /> Sair
