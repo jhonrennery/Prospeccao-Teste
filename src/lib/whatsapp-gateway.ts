@@ -1,9 +1,55 @@
 import { supabase } from "@/integrations/supabase/client";
 
+const GATEWAY_URL_STORAGE_KEY = "whatsapp_gateway_url";
+
+function normalizeGatewayUrl(url: string) {
+  const trimmed = url.trim().replace(/\/$/, "");
+  if (!trimmed) return null;
+
+  if (/^https?:\/\//i.test(trimmed)) {
+    return trimmed;
+  }
+
+  if (trimmed.startsWith("localhost") || trimmed.startsWith("127.0.0.1")) {
+    return `http://${trimmed}`;
+  }
+
+  return `https://${trimmed}`;
+}
+
+function readGatewayUrlOverride() {
+  if (typeof window === "undefined") return null;
+  const stored = window.localStorage.getItem(GATEWAY_URL_STORAGE_KEY);
+  return stored ? normalizeGatewayUrl(stored) : null;
+}
+
+export function setWhatsAppGatewayUrl(url: string) {
+  if (typeof window === "undefined") return null;
+  const normalized = normalizeGatewayUrl(url);
+
+  if (normalized) {
+    window.localStorage.setItem(GATEWAY_URL_STORAGE_KEY, normalized);
+  } else {
+    window.localStorage.removeItem(GATEWAY_URL_STORAGE_KEY);
+  }
+
+  return normalized;
+}
+
+export function clearWhatsAppGatewayUrl() {
+  if (typeof window === "undefined") return;
+  window.localStorage.removeItem(GATEWAY_URL_STORAGE_KEY);
+}
+
 function getGatewayBaseUrl() {
-  const configured = import.meta.env.VITE_WHATSAPP_GATEWAY_URL;
+  const configured = normalizeGatewayUrl(import.meta.env.VITE_WHATSAPP_GATEWAY_URL || "");
   if (configured) {
-    return configured.replace(/\/$/, "");
+    return configured;
+  }
+
+  const override = readGatewayUrlOverride();
+  if (override) {
+    return override;
   }
 
   if (typeof window !== "undefined") {
@@ -27,7 +73,7 @@ export function getWhatsAppGatewayStatus() {
     return {
       available: false,
       baseUrl: null,
-      reason: "Defina `VITE_WHATSAPP_GATEWAY_URL` para usar o gateway fora do ambiente local.",
+      reason: "Configure `VITE_WHATSAPP_GATEWAY_URL` ou informe a URL do gateway na tela do WhatsApp.",
     };
   }
 
@@ -36,6 +82,50 @@ export function getWhatsAppGatewayStatus() {
     baseUrl,
     reason: null,
   };
+}
+
+export async function checkWhatsAppGatewayHealth() {
+  const gateway = getWhatsAppGatewayStatus();
+
+  if (!gateway.available || !gateway.baseUrl) {
+    return {
+      ok: false,
+      baseUrl: null,
+      error: gateway.reason || "Gateway do WhatsApp não configurado.",
+    };
+  }
+
+  try {
+    const response = await fetch(`${gateway.baseUrl}/health`);
+    if (!response.ok) {
+      return {
+        ok: false,
+        baseUrl: gateway.baseUrl,
+        error: `Gateway respondeu com status ${response.status}.`,
+      };
+    }
+
+    const payload = await response.json().catch(() => ({}));
+    if (!payload?.ok) {
+      return {
+        ok: false,
+        baseUrl: gateway.baseUrl,
+        error: "Gateway não retornou um healthcheck válido.",
+      };
+    }
+
+    return {
+      ok: true,
+      baseUrl: gateway.baseUrl,
+      error: null,
+    };
+  } catch {
+    return {
+      ok: false,
+      baseUrl: gateway.baseUrl,
+      error: `Não foi possível conectar ao gateway em ${gateway.baseUrl}.`,
+    };
+  }
 }
 
 export interface WhatsAppSession {
