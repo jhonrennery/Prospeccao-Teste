@@ -124,7 +124,9 @@ export default function WhatsAppPage() {
   };
 
   const loadMessages = async (sessionId: string, chatJid: string) => {
-    if (!gatewayStatus.available) return;
+    const currentGatewayStatus = resolveGatewayStatus();
+    if (!currentGatewayStatus.available) return;
+
     try {
       const response = await listWhatsAppMessages(sessionId, chatJid);
       setGatewayError(null);
