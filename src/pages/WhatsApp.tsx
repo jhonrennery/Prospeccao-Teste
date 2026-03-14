@@ -137,6 +137,8 @@ export default function WhatsAppPage() {
   };
 
   useEffect(() => {
+    const currentGatewayStatus = resolveGatewayStatus();
+    setGatewayUrlInput(currentGatewayStatus.baseUrl || "");
     loadSessions(true);
   }, []);
 
