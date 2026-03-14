@@ -56,8 +56,14 @@ export default function WhatsAppPage() {
   const [sending, setSending] = useState(false);
   const [connecting, setConnecting] = useState(false);
   const [gatewayError, setGatewayError] = useState<string | null>(null);
+  const [gatewayStatus, setGatewayStatus] = useState(() => getWhatsAppGatewayStatus());
+  const [gatewayUrlInput, setGatewayUrlInput] = useState(() => getWhatsAppGatewayStatus().baseUrl || "");
 
-  const gatewayStatus = useMemo(() => getWhatsAppGatewayStatus(), []);
+  const resolveGatewayStatus = () => {
+    const nextStatus = getWhatsAppGatewayStatus();
+    setGatewayStatus(nextStatus);
+    return nextStatus;
+  };
 
   const selectedSession = useMemo(
     () => sessions.find((session) => session.id === selectedSessionId) || null,
