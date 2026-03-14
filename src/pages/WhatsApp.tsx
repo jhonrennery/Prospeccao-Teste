@@ -77,8 +77,9 @@ export default function WhatsAppPage() {
 
   const loadSessions = async (keepLoading = false) => {
     if (keepLoading) setLoading(true);
-    if (!gatewayStatus.available) {
-      setGatewayError(gatewayStatus.reason);
+    const currentGatewayStatus = resolveGatewayStatus();
+    if (!currentGatewayStatus.available) {
+      setGatewayError(currentGatewayStatus.reason);
       setSessions([]);
       if (keepLoading) setLoading(false);
       return;
