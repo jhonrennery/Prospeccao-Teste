@@ -180,7 +180,15 @@ export default function WhatsAppPage() {
 
   const handleConnect = async () => {
     setConnecting(true);
+
     try {
+      const health = await checkWhatsAppGatewayHealth();
+      if (!health.ok) {
+        setGatewayError(health.error);
+        toast.error(health.error || "Gateway indisponível");
+        return;
+      }
+
       const response = await connectWhatsAppSession(selectedSessionId || undefined);
       setGatewayError(null);
       setSessions(response.sessions);
