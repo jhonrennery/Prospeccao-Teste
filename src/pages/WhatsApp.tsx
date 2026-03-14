@@ -312,6 +312,26 @@ export default function WhatsAppPage() {
         </div>
       </div>
 
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">Gateway do WhatsApp</CardTitle>
+          <CardDescription>
+            Informe a URL do servidor do gateway para gerar o QR Code (ex: http://localhost:3001 ou https://seu-dominio.com).
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-3 lg:flex-row">
+          <Input
+            value={gatewayUrlInput}
+            onChange={(event) => setGatewayUrlInput(event.target.value)}
+            placeholder="https://seu-gateway.com"
+            className="h-10"
+          />
+          <Button variant="secondary" onClick={handleSaveGatewayUrl} className="lg:w-auto">
+            Salvar e testar conexão
+          </Button>
+        </CardContent>
+      </Card>
+
       {gatewayError && (
         <Card className="border-warning/30 bg-warning/5">
           <CardContent className="p-4 text-sm text-warning">
