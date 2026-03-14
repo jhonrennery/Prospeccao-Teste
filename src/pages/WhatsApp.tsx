@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import {
+  checkWhatsAppGatewayHealth,
+  clearWhatsAppGatewayUrl,
   connectWhatsAppSession,
   disconnectWhatsAppSession,
   getWhatsAppGatewayStatus,
@@ -8,6 +10,7 @@ import {
   listWhatsAppMessages,
   listWhatsAppSessions,
   sendWhatsAppMessage,
+  setWhatsAppGatewayUrl,
   type WhatsAppChat,
   type WhatsAppMessage,
   type WhatsAppSession,
@@ -53,8 +56,14 @@ export default function WhatsAppPage() {
   const [sending, setSending] = useState(false);
   const [connecting, setConnecting] = useState(false);
   const [gatewayError, setGatewayError] = useState<string | null>(null);
+  const [gatewayStatus, setGatewayStatus] = useState(() => getWhatsAppGatewayStatus());
+  const [gatewayUrlInput, setGatewayUrlInput] = useState(() => getWhatsAppGatewayStatus().baseUrl || "");
 
-  const gatewayStatus = useMemo(() => getWhatsAppGatewayStatus(), []);
+  const resolveGatewayStatus = () => {
+    const nextStatus = getWhatsAppGatewayStatus();
+    setGatewayStatus(nextStatus);
+    return nextStatus;
+  };
 
   const selectedSession = useMemo(
     () => sessions.find((session) => session.id === selectedSessionId) || null,
@@ -68,8 +77,9 @@ export default function WhatsAppPage() {
 
   const loadSessions = async (keepLoading = false) => {
     if (keepLoading) setLoading(true);
-    if (!gatewayStatus.available) {
-      setGatewayError(gatewayStatus.reason);
+    const currentGatewayStatus = resolveGatewayStatus();
+    if (!currentGatewayStatus.available) {
+      setGatewayError(currentGatewayStatus.reason);
       setSessions([]);
       if (keepLoading) setLoading(false);
       return;
@@ -98,7 +108,9 @@ export default function WhatsAppPage() {
   };
 
   const loadChats = async (sessionId: string) => {
-    if (!gatewayStatus.available) return;
+    const currentGatewayStatus = resolveGatewayStatus();
+    if (!currentGatewayStatus.available) return;
+
     try {
       const response = await listWhatsAppChats(sessionId);
       setGatewayError(null);
@@ -112,7 +124,9 @@ export default function WhatsAppPage() {
   };
 
   const loadMessages = async (sessionId: string, chatJid: string) => {
-    if (!gatewayStatus.available) return;
+    const currentGatewayStatus = resolveGatewayStatus();
+    if (!currentGatewayStatus.available) return;
+
     try {
       const response = await listWhatsAppMessages(sessionId, chatJid);
       setGatewayError(null);
@@ -123,6 +137,8 @@ export default function WhatsAppPage() {
   };
 
   useEffect(() => {
+    const currentGatewayStatus = resolveGatewayStatus();
+    setGatewayUrlInput(currentGatewayStatus.baseUrl || "");
     loadSessions(true);
   }, []);
 
@@ -145,9 +161,11 @@ export default function WhatsAppPage() {
   }, [selectedSessionId, selectedChatJid]);
 
   useEffect(() => {
-    if (!gatewayStatus.available) {
+    const currentGatewayStatus = resolveGatewayStatus();
+
+    if (!currentGatewayStatus.available) {
       setLoading(false);
-      setGatewayError(gatewayStatus.reason);
+      setGatewayError(currentGatewayStatus.reason);
       return;
     }
 
@@ -158,11 +176,19 @@ export default function WhatsAppPage() {
     }, 4000);
 
     return () => window.clearInterval(interval);
-  }, [gatewayStatus.available, gatewayStatus.reason, selectedSessionId, selectedChatJid]);
+  }, [selectedSessionId, selectedChatJid]);
 
   const handleConnect = async () => {
     setConnecting(true);
+
     try {
+      const health = await checkWhatsAppGatewayHealth();
+      if (!health.ok) {
+        setGatewayError(health.error);
+        toast.error(health.error || "Gateway indisponível");
+        return;
+      }
+
       const response = await connectWhatsAppSession(selectedSessionId || undefined);
       setGatewayError(null);
       setSessions(response.sessions);
@@ -194,6 +220,41 @@ export default function WhatsAppPage() {
       setGatewayError(message);
       toast.error(message);
     }
+  };
+
+  const handleSaveGatewayUrl = async () => {
+    const trimmedUrl = gatewayUrlInput.trim();
+
+    if (!trimmedUrl) {
+      clearWhatsAppGatewayUrl();
+      const currentGatewayStatus = resolveGatewayStatus();
+      setGatewayError(currentGatewayStatus.reason);
+      setSessions([]);
+      setChats([]);
+      setMessages([]);
+      toast.info("URL do gateway removida");
+      return;
+    }
+
+    const normalizedUrl = setWhatsAppGatewayUrl(trimmedUrl);
+    const currentGatewayStatus = resolveGatewayStatus();
+    setGatewayUrlInput(normalizedUrl || trimmedUrl);
+
+    if (!currentGatewayStatus.available) {
+      setGatewayError(currentGatewayStatus.reason);
+      return;
+    }
+
+    const health = await checkWhatsAppGatewayHealth();
+    if (!health.ok) {
+      setGatewayError(health.error);
+      toast.error(health.error || "Não foi possível conectar ao gateway");
+      return;
+    }
+
+    setGatewayError(null);
+    toast.success("Gateway conectado com sucesso");
+    await loadSessions(true);
   };
 
   const handleSend = async () => {
@@ -250,6 +311,26 @@ export default function WhatsAppPage() {
           </Button>
         </div>
       </div>
+
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">Gateway do WhatsApp</CardTitle>
+          <CardDescription>
+            Informe a URL do servidor do gateway para gerar o QR Code (ex: http://localhost:3001 ou https://seu-dominio.com).
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-3 lg:flex-row">
+          <Input
+            value={gatewayUrlInput}
+            onChange={(event) => setGatewayUrlInput(event.target.value)}
+            placeholder="https://seu-gateway.com"
+            className="h-10"
+          />
+          <Button variant="secondary" onClick={handleSaveGatewayUrl} className="lg:w-auto">
+            Salvar e testar conexão
+          </Button>
+        </CardContent>
+      </Card>
 
       {gatewayError && (
         <Card className="border-warning/30 bg-warning/5">
