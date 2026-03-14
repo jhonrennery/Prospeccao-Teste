@@ -309,10 +309,10 @@ REGRAS CRÍTICAS:
     // Keyword exclusion
     let final = places;
     if (keywords_exclude) {
-      const excl = keywords_exclude.split(',').map(w => w.trim().toLowerCase()).filter(Boolean);
+      const excl = keywords_exclude.split(',').map((w: string) => w.trim().toLowerCase()).filter(Boolean);
       final = final.filter(p => {
         const t = `${p.name} ${p.address || ''}`.toLowerCase();
-        return !excl.some(w => t.includes(w));
+        return !excl.some((w: string) => t.includes(w));
       });
     }
 
