@@ -1,0 +1,25 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        VITE_SUPABASE_URL: ${VITE_SUPABASE_URL}
+        VITE_SUPABASE_PUBLISHABLE_KEY: ${VITE_SUPABASE_PUBLISHABLE_KEY}
+    ports:
+      - "8080:80"
+    restart: unless-stopped
+
+  whatsapp-gateway:
+    build:
+      context: ./whatsapp-gateway
+      dockerfile: Dockerfile
+    environment:
+      WHATSAPP_GATEWAY_PORT: 3001
+      SUPABASE_URL: ${VITE_SUPABASE_URL}
+      SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY}
+      WHATSAPP_GATEWAY_CORS_ORIGIN: ${WHATSAPP_GATEWAY_CORS_ORIGIN:-*}
+      WHATSAPP_BROWSER_NAME: ${WHATSAPP_BROWSER_NAME:-Company Probe}
+    ports:
+      - "3001:3001"
+    restart: unless-stopped

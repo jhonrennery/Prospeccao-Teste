@@ -17,6 +17,7 @@ import ExportPage from "./pages/Export";
 import KanbanPage from "./pages/Kanban";
 import Dashboard from "./pages/Dashboard";
 import SettingsPage from "./pages/Settings";
+import WhatsAppPage from "./pages/WhatsApp";
 import NotFound from "./pages/NotFound";
 import type { Session } from "@supabase/supabase-js";
 
@@ -51,6 +52,7 @@ function AuthenticatedLayout() {
           <Route path="/export" element={<ExportPage />} />
           <Route path="/kanban" element={<KanbanPage />} />
           <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/whatsapp" element={<WhatsAppPage />} />
           <Route path="/settings" element={<SettingsPage />} />
           <Route path="*" element={<NotFound />} />
         </Routes>

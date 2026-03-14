@@ -45,10 +45,10 @@ interface DashboardData {
 }
 
 const COLORS = {
-  primary: "hsl(160, 84%, 36%)",
+  primary: "hsl(var(--primary))",
   info: "hsl(210, 100%, 50%)",
   warning: "hsl(38, 92%, 50%)",
-  success: "hsl(160, 84%, 36%)",
+  success: "hsl(var(--success))",
   destructive: "hsl(0, 72%, 51%)",
   muted: "hsl(215, 12%, 75%)",
 };

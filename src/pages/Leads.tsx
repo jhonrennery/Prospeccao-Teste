@@ -39,7 +39,7 @@ const statusOptions = [
   { value: "new", label: "Novo", color: "bg-info/15 text-info border-info/30" },
   { value: "contacted", label: "Contatado", color: "bg-warning/15 text-warning border-warning/30" },
   { value: "interested", label: "Interessado", color: "bg-primary/15 text-primary border-primary/30" },
-  { value: "converted", label: "Convertido", color: "bg-emerald-500/15 text-emerald-600 border-emerald-500/30" },
+  { value: "converted", label: "Convertido", color: "bg-success/15 text-success border-success/30" },
   { value: "lost", label: "Perdido", color: "bg-destructive/15 text-destructive border-destructive/30" },
 ];
 
