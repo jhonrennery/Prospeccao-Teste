@@ -222,6 +222,41 @@ export default function WhatsAppPage() {
     }
   };
 
+  const handleSaveGatewayUrl = async () => {
+    const trimmedUrl = gatewayUrlInput.trim();
+
+    if (!trimmedUrl) {
+      clearWhatsAppGatewayUrl();
+      const currentGatewayStatus = resolveGatewayStatus();
+      setGatewayError(currentGatewayStatus.reason);
+      setSessions([]);
+      setChats([]);
+      setMessages([]);
+      toast.info("URL do gateway removida");
+      return;
+    }
+
+    const normalizedUrl = setWhatsAppGatewayUrl(trimmedUrl);
+    const currentGatewayStatus = resolveGatewayStatus();
+    setGatewayUrlInput(normalizedUrl || trimmedUrl);
+
+    if (!currentGatewayStatus.available) {
+      setGatewayError(currentGatewayStatus.reason);
+      return;
+    }
+
+    const health = await checkWhatsAppGatewayHealth();
+    if (!health.ok) {
+      setGatewayError(health.error);
+      toast.error(health.error || "Não foi possível conectar ao gateway");
+      return;
+    }
+
+    setGatewayError(null);
+    toast.success("Gateway conectado com sucesso");
+    await loadSessions(true);
+  };
+
   const handleSend = async () => {
     if (!selectedSessionId) {
       toast.warning("Conecte uma sessão antes de enviar mensagens");
