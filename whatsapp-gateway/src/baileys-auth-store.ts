@@ -5,7 +5,7 @@ import {
   type AuthenticationState,
   type SignalDataTypeMap,
 } from "@whiskeysockets/baileys";
-import { supabaseAdmin } from "./supabase.js";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
 type AuthValue = Record<string, unknown> | unknown[] | string | number | boolean | null;
 type SignalKeyType = keyof SignalDataTypeMap;
@@ -20,20 +20,19 @@ function deserializeBaileys<T>(value: AuthValue): T {
 
 export class DatabaseAuthStore {
   constructor(
+    private readonly supabase: SupabaseClient,
     private readonly userId: string,
     private readonly sessionId: string,
   ) {}
 
   async load(): Promise<AuthenticationState> {
-    const { data, error } = await supabaseAdmin
+    const { data, error } = await this.supabase
       .from("whatsapp_session_auth")
       .select("auth_group, auth_key, auth_value")
       .eq("user_id", this.userId)
       .eq("session_id", this.sessionId);
 
-    if (error) {
-      throw error;
-    }
+    if (error) throw error;
 
     const credsRow = data?.find((row) => row.auth_group === "creds" && row.auth_key === "main");
     const creds = credsRow?.auth_value
@@ -44,11 +43,9 @@ export class DatabaseAuthStore {
       creds,
       keys: {
         get: async <T extends SignalKeyType>(type: T, ids: string[]) => {
-          if (ids.length === 0) {
-            return {} as Record<string, SignalDataTypeMap[T]>;
-          }
+          if (ids.length === 0) return {} as Record<string, SignalDataTypeMap[T]>;
 
-          const { data: rows, error: rowsError } = await supabaseAdmin
+          const { data: rows, error: rowsError } = await this.supabase
             .from("whatsapp_session_auth")
             .select("auth_key, auth_value")
             .eq("user_id", this.userId)
@@ -56,15 +53,12 @@ export class DatabaseAuthStore {
             .eq("auth_group", type)
             .in("auth_key", ids);
 
-          if (rowsError) {
-            throw rowsError;
-          }
+          if (rowsError) throw rowsError;
 
           const result = {} as Record<string, SignalDataTypeMap[T]>;
           for (const row of rows || []) {
             result[row.auth_key] = deserializeBaileys<SignalDataTypeMap[T]>(row.auth_value as AuthValue);
           }
-
           return result;
         },
         set: async (data) => {
@@ -75,41 +69,34 @@ export class DatabaseAuthStore {
             for (const [authKey, authValue] of Object.entries(entries || {})) {
               if (authValue == null) {
                 deletes.push({ auth_group: authGroup, auth_key: authKey });
-                continue;
+              } else {
+                upserts.push({
+                  user_id: this.userId,
+                  session_id: this.sessionId,
+                  auth_group: authGroup,
+                  auth_key: authKey,
+                  auth_value: serializeBaileys(authValue),
+                });
               }
-
-              upserts.push({
-                user_id: this.userId,
-                session_id: this.sessionId,
-                auth_group: authGroup,
-                auth_key: authKey,
-                auth_value: serializeBaileys(authValue),
-              });
             }
           }
 
           if (upserts.length > 0) {
-            const { error: upsertError } = await supabaseAdmin
+            const { error: upsertError } = await this.supabase
               .from("whatsapp_session_auth")
               .upsert(upserts, { onConflict: "session_id,auth_group,auth_key" });
-
-            if (upsertError) {
-              throw upsertError;
-            }
+            if (upsertError) throw upsertError;
           }
 
           for (const entry of deletes) {
-            const { error: deleteError } = await supabaseAdmin
+            const { error: deleteError } = await this.supabase
               .from("whatsapp_session_auth")
               .delete()
               .eq("user_id", this.userId)
               .eq("session_id", this.sessionId)
               .eq("auth_group", entry.auth_group)
               .eq("auth_key", entry.auth_key);
-
-            if (deleteError) {
-              throw deleteError;
-            }
+            if (deleteError) throw deleteError;
           }
         },
       },
@@ -117,7 +104,7 @@ export class DatabaseAuthStore {
   }
 
   async saveCreds(creds: AuthenticationCreds) {
-    const { error } = await supabaseAdmin.from("whatsapp_session_auth").upsert(
+    const { error } = await this.supabase.from("whatsapp_session_auth").upsert(
       {
         user_id: this.userId,
         session_id: this.sessionId,
@@ -127,21 +114,15 @@ export class DatabaseAuthStore {
       },
       { onConflict: "session_id,auth_group,auth_key" },
     );
-
-    if (error) {
-      throw error;
-    }
+    if (error) throw error;
   }
 
   async clear() {
-    const { error } = await supabaseAdmin
+    const { error } = await this.supabase
       .from("whatsapp_session_auth")
       .delete()
       .eq("user_id", this.userId)
       .eq("session_id", this.sessionId);
-
-    if (error) {
-      throw error;
-    }
+    if (error) throw error;
   }
 }

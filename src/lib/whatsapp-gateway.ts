@@ -7,10 +7,35 @@ function getGatewayBaseUrl() {
   }
 
   if (typeof window !== "undefined") {
-    return `${window.location.protocol}//${window.location.hostname}:3001`;
+    const { hostname, protocol } = window.location;
+    const isLocalHost = hostname === "localhost" || hostname === "127.0.0.1";
+
+    if (isLocalHost) {
+      return `${protocol}//${hostname}:3001`;
+    }
+
+    return null;
   }
 
   return "http://localhost:3001";
+}
+
+export function getWhatsAppGatewayStatus() {
+  const baseUrl = getGatewayBaseUrl();
+
+  if (!baseUrl) {
+    return {
+      available: false,
+      baseUrl: null,
+      reason: "Defina `VITE_WHATSAPP_GATEWAY_URL` para usar o gateway fora do ambiente local.",
+    };
+  }
+
+  return {
+    available: true,
+    baseUrl,
+    reason: null,
+  };
 }
 
 export interface WhatsAppSession {
@@ -58,22 +83,32 @@ export interface WhatsAppMessage {
 }
 
 async function gatewayFetch<T>(path: string, init?: RequestInit): Promise<T> {
+  const gateway = getWhatsAppGatewayStatus();
+  if (!gateway.available || !gateway.baseUrl) {
+    throw new Error(gateway.reason || "Gateway do WhatsApp nao configurado.");
+  }
+
   const { data } = await supabase.auth.getSession();
   const accessToken = data.session?.access_token;
   if (!accessToken) {
     throw new Error("Sessão expirada. Faça login novamente.");
   }
 
-  const response = await fetch(`${getGatewayBaseUrl()}${path}`, {
-    ...init,
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${accessToken}`,
-      ...(init?.headers || {}),
-    },
-  });
+  let response: Response;
+  try {
+    response = await fetch(`${gateway.baseUrl}${path}`, {
+      ...init,
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${accessToken}`,
+        ...(init?.headers || {}),
+      },
+    });
+  } catch {
+    throw new Error(`Nao foi possivel conectar ao gateway do WhatsApp em ${gateway.baseUrl}.`);
+  }
 
-  const payload = await response.json();
+  const payload = await response.json().catch(() => ({}));
   if (!response.ok) {
     throw new Error(payload.error || "Erro ao acessar gateway do WhatsApp");
   }

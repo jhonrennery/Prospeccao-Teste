@@ -1,9 +1,10 @@
 import type { Request } from "express";
-import { supabaseAdmin } from "./supabase.js";
+import { createSupabaseClient } from "./supabase.js";
 
 export interface AuthenticatedUser {
   id: string;
   email: string | null;
+  accessToken: string;
 }
 
 export async function authenticateRequest(req: Request): Promise<AuthenticatedUser> {
@@ -13,7 +14,8 @@ export async function authenticateRequest(req: Request): Promise<AuthenticatedUs
   }
 
   const token = authHeader.slice("Bearer ".length).trim();
-  const { data, error } = await supabaseAdmin.auth.getUser(token);
+  const supabase = createSupabaseClient(token);
+  const { data, error } = await supabase.auth.getUser(token);
 
   if (error || !data.user) {
     throw new Error("Invalid access token");
@@ -22,5 +24,6 @@ export async function authenticateRequest(req: Request): Promise<AuthenticatedUs
   return {
     id: data.user.id,
     email: data.user.email ?? null,
+    accessToken: token,
   };
 }

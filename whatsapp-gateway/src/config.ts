@@ -11,7 +11,7 @@ function requireEnv(name: string, fallback?: string) {
 export const env = {
   port: Number(process.env.WHATSAPP_GATEWAY_PORT || 3001),
   supabaseUrl: requireEnv("SUPABASE_URL", process.env.VITE_SUPABASE_URL),
-  supabaseServiceRoleKey: requireEnv("SUPABASE_SERVICE_ROLE_KEY"),
+  supabasePublishableKey: requireEnv("SUPABASE_PUBLISHABLE_KEY", process.env.VITE_SUPABASE_PUBLISHABLE_KEY),
   corsOrigin: process.env.WHATSAPP_GATEWAY_CORS_ORIGIN || "*",
   browserName: process.env.WHATSAPP_BROWSER_NAME || "Company Probe",
 };

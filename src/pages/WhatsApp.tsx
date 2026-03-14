@@ -3,6 +3,7 @@ import { toast } from "sonner";
 import {
   connectWhatsAppSession,
   disconnectWhatsAppSession,
+  getWhatsAppGatewayStatus,
   listWhatsAppChats,
   listWhatsAppMessages,
   listWhatsAppSessions,
@@ -51,6 +52,9 @@ export default function WhatsAppPage() {
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [connecting, setConnecting] = useState(false);
+  const [gatewayError, setGatewayError] = useState<string | null>(null);
+
+  const gatewayStatus = useMemo(() => getWhatsAppGatewayStatus(), []);
 
   const selectedSession = useMemo(
     () => sessions.find((session) => session.id === selectedSessionId) || null,
@@ -64,8 +68,16 @@ export default function WhatsAppPage() {
 
   const loadSessions = async (keepLoading = false) => {
     if (keepLoading) setLoading(true);
+    if (!gatewayStatus.available) {
+      setGatewayError(gatewayStatus.reason);
+      setSessions([]);
+      if (keepLoading) setLoading(false);
+      return;
+    }
+
     try {
       const response = await listWhatsAppSessions();
+      setGatewayError(null);
       setSessions(response.sessions);
       if (!selectedSessionId && response.sessions.length > 0) {
         setSelectedSessionId(response.sessions[0].id);
@@ -75,30 +87,38 @@ export default function WhatsAppPage() {
         setSelectedChatJid(null);
       }
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Erro ao carregar sessões do WhatsApp");
+      const message = error instanceof Error ? error.message : "Erro ao carregar sessões do WhatsApp";
+      setGatewayError(message);
+      if (keepLoading) {
+        toast.error(message);
+      }
     } finally {
       if (keepLoading) setLoading(false);
     }
   };
 
   const loadChats = async (sessionId: string) => {
+    if (!gatewayStatus.available) return;
     try {
       const response = await listWhatsAppChats(sessionId);
+      setGatewayError(null);
       setChats(response.chats);
       if (selectedChatJid && !response.chats.some((chat) => chat.chat_jid === selectedChatJid)) {
         setSelectedChatJid(null);
       }
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Erro ao carregar conversas");
+      setGatewayError(error instanceof Error ? error.message : "Erro ao carregar conversas");
     }
   };
 
   const loadMessages = async (sessionId: string, chatJid: string) => {
+    if (!gatewayStatus.available) return;
     try {
       const response = await listWhatsAppMessages(sessionId, chatJid);
+      setGatewayError(null);
       setMessages(response.messages);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Erro ao carregar mensagens");
+      setGatewayError(error instanceof Error ? error.message : "Erro ao carregar mensagens");
     }
   };
 
@@ -125,6 +145,12 @@ export default function WhatsAppPage() {
   }, [selectedSessionId, selectedChatJid]);
 
   useEffect(() => {
+    if (!gatewayStatus.available) {
+      setLoading(false);
+      setGatewayError(gatewayStatus.reason);
+      return;
+    }
+
     const interval = window.setInterval(() => {
       loadSessions();
       if (selectedSessionId) loadChats(selectedSessionId);
@@ -132,19 +158,22 @@ export default function WhatsAppPage() {
     }, 4000);
 
     return () => window.clearInterval(interval);
-  }, [selectedSessionId, selectedChatJid]);
+  }, [gatewayStatus.available, gatewayStatus.reason, selectedSessionId, selectedChatJid]);
 
   const handleConnect = async () => {
     setConnecting(true);
     try {
       const response = await connectWhatsAppSession(selectedSessionId || undefined);
+      setGatewayError(null);
       setSessions(response.sessions);
       if (response.session) {
         setSelectedSessionId(response.session.id);
       }
       toast.success("Conexão com WhatsApp iniciada");
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Erro ao iniciar conexão");
+      const message = error instanceof Error ? error.message : "Erro ao iniciar conexão";
+      setGatewayError(message);
+      toast.error(message);
     } finally {
       setConnecting(false);
     }
@@ -154,13 +183,16 @@ export default function WhatsAppPage() {
     if (!selectedSessionId) return;
     try {
       const response = await disconnectWhatsAppSession(selectedSessionId);
+      setGatewayError(null);
       setSessions(response.sessions);
       setChats([]);
       setMessages([]);
       setSelectedChatJid(null);
       toast.success("Sessão desconectada");
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Erro ao desconectar sessão");
+      const message = error instanceof Error ? error.message : "Erro ao desconectar sessão";
+      setGatewayError(message);
+      toast.error(message);
     }
   };
 
@@ -179,6 +211,7 @@ export default function WhatsAppPage() {
     setSending(true);
     try {
       await sendWhatsAppMessage(selectedSessionId, targetJid, newMessage.trim());
+      setGatewayError(null);
       setNewMessage("");
       setNewChatJid("");
       setSelectedChatJid(targetJid);
@@ -186,7 +219,9 @@ export default function WhatsAppPage() {
       await loadMessages(selectedSessionId, targetJid);
       toast.success("Mensagem enviada");
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Erro ao enviar mensagem");
+      const message = error instanceof Error ? error.message : "Erro ao enviar mensagem";
+      setGatewayError(message);
+      toast.error(message);
     } finally {
       setSending(false);
     }
@@ -215,6 +250,19 @@ export default function WhatsAppPage() {
           </Button>
         </div>
       </div>
+
+      {gatewayError && (
+        <Card className="border-warning/30 bg-warning/5">
+          <CardContent className="p-4 text-sm text-warning">
+            {gatewayError}
+            {!gatewayStatus.available && (
+              <span className="block mt-2 text-xs text-muted-foreground">
+                Para ambiente publicado, configure `VITE_WHATSAPP_GATEWAY_URL` apontando para o backend do WhatsApp.
+              </span>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       <div className="grid gap-4 xl:grid-cols-[360px_minmax(0,1fr)]">
         <div className="space-y-4">
