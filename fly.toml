@@ -1,0 +1,19 @@
+app = "prospectai-crm"
+primary_region = "gru"
+
+[build]
+  [build.args]
+    VITE_SUPABASE_URL = "https://qxuxgufhqkdofcwyvfgc.supabase.co"
+    VITE_SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF4dXhndWZocWtkb2Zjd3l2ZmdjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI3NDkyNDgsImV4cCI6MjA4ODMyNTI0OH0.EPMweRDi_CpROoa55j6YySTvgOe9HLZotgR5ulwFx78"
+
+[http_service]
+  internal_port = 80
+  force_https = true
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 0
+
+[[vm]]
+  memory = "256mb"
+  cpu_kind = "shared"
+  cpus = 1

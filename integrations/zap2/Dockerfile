@@ -23,11 +23,17 @@ FROM base AS runner
 
 ENV HOSTNAME=0.0.0.0
 
-RUN mkdir -p /app/.auth/baileys /app/storage/media
+# /app/data será o volume persistente; .auth e storage são symlinks para ele
+RUN mkdir -p /app/data \
+  && ln -s /app/data/.auth /app/.auth \
+  && ln -s /app/data/storage /app/storage
+
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/src/app/icon.svg ./src/app/icon.svg
-RUN chown -R node:node /app
+COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh \
+  && chown -R node:node /app
 
 USER node
 
@@ -36,4 +42,4 @@ EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
   CMD node -e "fetch('http://127.0.0.1:3000/zap2/health').then((r) => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"
 
-CMD ["node", "server.js"]
+CMD ["/usr/local/bin/docker-entrypoint.sh"]
