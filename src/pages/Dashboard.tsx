@@ -1,17 +1,17 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, type ReactNode } from "react";
 import { subDays, subMonths, startOfDay, format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
+import type { Database } from "@/integrations/supabase/types";
 import {
   BarChart3, TrendingUp, DollarSign, Users, Target,
-  ArrowUpRight, ArrowDownRight, Percent, Phone, Mail,
+  ArrowDownRight, Phone, Mail,
   CheckCircle2, XCircle, MessageSquare, Zap, CalendarDays,
+  Globe, Building2,
 } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, PieChart, Pie, Cell, AreaChart, Area,
-  FunnelChart, Funnel, LabelList,
 } from "recharts";
 
 function formatCurrency(value: number) {
@@ -54,6 +54,9 @@ const COLORS = {
 };
 
 type PeriodFilter = "7d" | "30d" | "90d" | "all";
+type LeadRow = Database["public"]["Tables"]["leads"]["Row"];
+type PlaceRow = Pick<Database["public"]["Tables"]["places"]["Row"], "id" | "phone" | "website" | "created_at">;
+type EnrichmentRow = Pick<Database["public"]["Tables"]["place_enrichment"]["Row"], "id" | "email" | "created_at">;
 
 const PERIOD_LABELS: Record<PeriodFilter, string> = {
   "7d": "7 dias",
@@ -73,9 +76,9 @@ function getDateCutoff(period: PeriodFilter): Date | null {
 }
 
 export default function Dashboard() {
-  const [allLeadsRaw, setAllLeadsRaw] = useState<any[]>([]);
-  const [allPlacesRaw, setAllPlacesRaw] = useState<any[]>([]);
-  const [allEnrichmentsRaw, setAllEnrichmentsRaw] = useState<any[]>([]);
+  const [allLeadsRaw, setAllLeadsRaw] = useState<LeadRow[]>([]);
+  const [allPlacesRaw, setAllPlacesRaw] = useState<PlaceRow[]>([]);
+  const [allEnrichmentsRaw, setAllEnrichmentsRaw] = useState<EnrichmentRow[]>([]);
   const [searchCountRaw, setSearchCountRaw] = useState(0);
   const [period, setPeriod] = useState<PeriodFilter>("all");
   const [loading, setLoading] = useState(true);
@@ -122,7 +125,7 @@ export default function Dashboard() {
     const converted = byStatus("converted");
     const lost = byStatus("lost");
 
-    const sumValue = (arr: any[]) =>
+    const sumValue = (arr: LeadRow[]) =>
       arr.reduce((sum, l) => sum + (Number(l.estimated_value) || 0), 0);
 
     const revenueConverted = sumValue(converted);
@@ -214,96 +217,168 @@ export default function Dashboard() {
 
   if (loading) {
     return (
-      <div className="space-y-6">
-        <h1 className="font-display text-2xl font-bold text-foreground flex items-center gap-2">
-          <BarChart3 className="h-6 w-6 text-primary" /> Dashboard
+      <div className="space-y-6 max-w-[1440px]">
+        <h1 className="font-display text-2xl font-bold text-foreground flex items-center gap-2 tracking-tight">
+          <BarChart3 className="h-6 w-6 text-primary" /> Dashboard Executivo
         </h1>
-        <div className="glass-card p-12 text-center text-muted-foreground">Carregando...</div>
+        <div className="glass-card p-12 text-center text-muted-foreground">Carregando painel...</div>
       </div>
     );
   }
 
-  return (
-    <div className="space-y-5 max-w-7xl">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <div>
-          <h1 className="font-display text-2xl font-bold text-foreground flex items-center gap-2">
-            <BarChart3 className="h-6 w-6 text-primary" /> Dashboard
-          </h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Visão completa de performance, receita e taxa de conversão
-          </p>
-        </div>
-        <div className="flex items-center gap-1 bg-secondary rounded-lg p-1">
-          {(Object.keys(PERIOD_LABELS) as PeriodFilter[]).map((p) => (
-            <Button
-              key={p}
-              size="sm"
-              variant={period === p ? "default" : "ghost"}
-              className="text-xs h-7 px-3"
-              onClick={() => setPeriod(p)}
-            >
-              <CalendarDays className="h-3 w-3 mr-1" />
-              {PERIOD_LABELS[p]}
-            </Button>
-          ))}
-        </div>
-      </div>
+  const winRateLabel =
+    data.closeRate >= 35 ? "Acima da meta" : data.closeRate >= 20 ? "Dentro do esperado" : "Abaixo da meta";
+  const conversionPerContract =
+    data.totalConverted > 0 ? Math.ceil(data.totalProspected / data.totalConverted) : null;
+  const uncoveredLeads = Math.max(data.totalProspected - data.totalContacted, 0);
 
-      {/* Revenue cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-        <MetricCard
+  return (
+    <div className="space-y-6 max-w-[1440px] pb-4">
+      <section className="glass-card p-5 md:p-6 border-border/80 shadow-[0_8px_24px_-18px_hsl(var(--foreground)/0.4)]">
+        <div className="flex flex-col gap-5">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+            <div className="space-y-2">
+              <div className="inline-flex items-center gap-2 rounded-full border border-primary/25 bg-primary/10 px-3 py-1">
+                <Building2 className="h-3.5 w-3.5 text-primary" />
+                <span className="text-[11px] font-semibold uppercase tracking-[0.12em] text-primary">
+                  Painel Executivo
+                </span>
+              </div>
+              <h1 className="font-display text-2xl font-bold tracking-tight text-foreground md:text-3xl">
+                Dashboard de Prospecção Comercial
+              </h1>
+              <p className="max-w-2xl text-sm text-muted-foreground">
+                Leitura consolidada de funil, receita e cobertura de dados para decisão operacional.
+              </p>
+            </div>
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:w-[420px]">
+              <HeaderKpi label="Buscas" value={data.totalSearches.toString()} />
+              <HeaderKpi label="Prospectados" value={data.totalProspected.toString()} />
+              <HeaderKpi label="Convertidos" value={data.totalConverted.toString()} />
+              <HeaderKpi label="Taxa Geral" value={formatPercent(data.conversionRate)} highlight />
+              <HeaderKpi label="Win Rate" value={formatPercent(data.closeRate)} highlight />
+              <HeaderKpi label="Ticket Médio" value={formatCurrency(data.avgDealValue)} />
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+              <span className="rounded-md border border-border/80 bg-background/70 px-2.5 py-1">
+                Win rate: <strong className="text-foreground">{winRateLabel}</strong>
+              </span>
+              <span className="rounded-md border border-border/80 bg-background/70 px-2.5 py-1">
+                Leads sem contato: <strong className="text-foreground">{uncoveredLeads}</strong>
+              </span>
+              <span className="rounded-md border border-border/80 bg-background/70 px-2.5 py-1">
+                Eficiência:{" "}
+                <strong className="text-foreground">
+                  {conversionPerContract ? `1 contrato a cada ${conversionPerContract} prospects` : "sem conversões"}
+                </strong>
+              </span>
+            </div>
+            <div className="flex items-center gap-1 rounded-lg border border-border/80 bg-secondary/70 p-1">
+              {(Object.keys(PERIOD_LABELS) as PeriodFilter[]).map((p) => (
+                <Button
+                  key={p}
+                  size="sm"
+                  variant={period === p ? "default" : "ghost"}
+                  className="h-7 px-3 text-xs"
+                  onClick={() => setPeriod(p)}
+                >
+                  <CalendarDays className="mr-1 h-3 w-3" />
+                  {PERIOD_LABELS[p]}
+                </Button>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <ExecutiveMetricCard
           icon={<DollarSign className="h-4 w-4" />}
           label="Receita Fechada"
           value={formatCurrency(data.revenueConverted)}
           sub={`${data.totalConverted} contratos`}
-          iconColor="text-primary"
-          iconBg="bg-primary/10"
+          tone="primary"
         />
-        <MetricCard
+        <ExecutiveMetricCard
           icon={<TrendingUp className="h-4 w-4" />}
           label="Pipeline Ativo"
           value={formatCurrency(data.revenuePipeline)}
           sub="Em negociação"
-          iconColor="text-info"
-          iconBg="bg-info/10"
+          tone="info"
         />
-        <MetricCard
+        <ExecutiveMetricCard
           icon={<Target className="h-4 w-4" />}
           label="Ticket Médio"
           value={formatCurrency(data.avgDealValue)}
           sub="Por contrato"
-          iconColor="text-warning"
-          iconBg="bg-warning/10"
+          tone="warning"
         />
-        <MetricCard
+        <ExecutiveMetricCard
           icon={<XCircle className="h-4 w-4" />}
           label="Receita Perdida"
           value={formatCurrency(data.revenueLost)}
           sub={`${data.totalLost} perdidos`}
-          iconColor="text-destructive"
-          iconBg="bg-destructive/10"
+          tone="destructive"
         />
-      </div>
+      </section>
 
-      {/* Conversion rates */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-        <RateCard label="Taxa Geral" value={data.conversionRate} icon={<Zap className="h-3.5 w-3.5" />} description="Prospectado → Convertido" />
-        <RateCard label="Contato" value={data.contactRate} icon={<Phone className="h-3.5 w-3.5" />} description="Prospectado → Contatado" />
-        <RateCard label="Interesse" value={data.interestRate} icon={<MessageSquare className="h-3.5 w-3.5" />} description="Contatado → Interessado" />
-        <RateCard label="Fechamento" value={data.closeRate} icon={<CheckCircle2 className="h-3.5 w-3.5" />} description="Interessado → Convertido" />
-        <RateCard label="Perda" value={data.lossRate} icon={<XCircle className="h-3.5 w-3.5" />} description="Total de perdidos" negative />
-      </div>
+      <section className="grid grid-cols-1 gap-4 xl:grid-cols-[1.75fr_1fr]">
+        <div className="glass-card p-4 md:p-5 border-border/80">
+          <div className="mb-4 flex items-center justify-between">
+            <div>
+              <h3 className="font-display text-sm font-semibold tracking-wide text-foreground">
+                Indicadores de Conversão
+              </h3>
+              <p className="text-[11px] text-muted-foreground">Eficiência por etapa do processo comercial</p>
+            </div>
+            <Zap className="h-4 w-4 text-primary" />
+          </div>
+          <div className="grid grid-cols-2 gap-2 md:grid-cols-3 xl:grid-cols-5">
+            <CompactRateCard label="Taxa Geral" value={data.conversionRate} icon={<Zap className="h-3.5 w-3.5" />} description="Prospectado -> Convertido" />
+            <CompactRateCard label="Contato" value={data.contactRate} icon={<Phone className="h-3.5 w-3.5" />} description="Prospectado -> Contatado" />
+            <CompactRateCard label="Interesse" value={data.interestRate} icon={<MessageSquare className="h-3.5 w-3.5" />} description="Contatado -> Interessado" />
+            <CompactRateCard label="Fechamento" value={data.closeRate} icon={<CheckCircle2 className="h-3.5 w-3.5" />} description="Interessado -> Convertido" />
+            <CompactRateCard label="Perda" value={data.lossRate} icon={<XCircle className="h-3.5 w-3.5" />} description="Leads Perdidos" negative />
+          </div>
+        </div>
 
-      {/* Charts row */}
-      {/* Funnel Chart - Full Width */}
-      <div className="glass-card p-4 md:p-5">
-        <h3 className="font-display text-sm font-semibold text-foreground mb-1">Funil de Conversão do Pipeline</h3>
-        <p className="text-[11px] text-muted-foreground mb-4">Visualize o drop-off entre cada etapa da prospecção</p>
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_1.2fr] gap-6 items-center">
-          {/* Visual funnel */}
-          <div className="flex flex-col items-center gap-1">
+        <div className="glass-card p-4 md:p-5 border-border/80">
+          <div className="mb-4 flex items-center justify-between">
+            <div>
+              <h3 className="font-display text-sm font-semibold tracking-wide text-foreground">
+                Cobertura de Dados
+              </h3>
+              <p className="text-[11px] text-muted-foreground">Qualidade dos dados coletados na prospecção</p>
+            </div>
+            <Users className="h-4 w-4 text-primary" />
+          </div>
+          <div className="space-y-3">
+            <QualityRow label="Com Telefone" value={data.totalWithPhone} total={data.totalProspected} icon={<Phone className="h-3.5 w-3.5" />} color={COLORS.warning} />
+            <QualityRow label="Com Website" value={data.totalWithWebsite} total={data.totalProspected} icon={<Globe className="h-3.5 w-3.5" />} color={COLORS.primary} />
+            <QualityRow label="Com E-mail" value={data.totalWithEmail} total={data.totalProspected} icon={<Mail className="h-3.5 w-3.5" />} color={COLORS.success} />
+            <div className="rounded-lg border border-border/80 bg-background/70 p-3 text-xs">
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground">Base prospectada</span>
+                <strong className="font-mono text-foreground">{data.totalProspected}</strong>
+              </div>
+              <div className="mt-1 flex items-center justify-between">
+                <span className="text-muted-foreground">Total de buscas</span>
+                <strong className="font-mono text-foreground">{data.totalSearches}</strong>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="grid grid-cols-1 gap-4 xl:grid-cols-[1.45fr_1fr]">
+        <div className="glass-card p-4 md:p-5 border-border/80">
+          <h3 className="font-display mb-1 text-sm font-semibold text-foreground">Funil de Conversão do Pipeline</h3>
+          <p className="mb-4 text-[11px] text-muted-foreground">Visualize o drop-off entre cada etapa da prospecção</p>
+          <div className="grid grid-cols-1 items-center gap-6 lg:grid-cols-[1fr_1.2fr]">
+            <div className="flex flex-col items-center gap-1">
             {funnelData.map((item, i) => {
               const maxVal = funnelData[0]?.value || 1;
               const widthPct = maxVal > 0 ? Math.max((item.value / maxVal) * 100, 12) : 12;
@@ -313,40 +388,39 @@ export default function Dashboard() {
               return (
                 <div key={item.name} className="w-full flex flex-col items-center">
                   <div
-                    className="h-12 rounded-lg flex items-center justify-between px-4 transition-all duration-500"
+                    className="flex h-12 items-center justify-between rounded-md px-4 transition-all duration-500 shadow-[inset_0_0_0_1px_hsl(0_0%_100%/0.15)]"
                     style={{
                       width: `${widthPct}%`,
                       backgroundColor: item.fill,
                       minWidth: "120px",
                     }}
                   >
-                    <span className="text-white text-xs font-semibold truncate">{item.name}</span>
-                    <span className="text-white/90 text-xs font-mono font-bold">{item.value}</span>
+                    <span className="truncate text-xs font-semibold text-white">{item.name}</span>
+                    <span className="font-mono text-xs font-bold text-white/90">{item.value}</span>
                   </div>
                   {i < funnelData.length - 1 && dropoff > 0 && (
                     <div className="flex items-center gap-1 py-0.5">
                       <ArrowDownRight className="h-3 w-3 text-destructive" />
-                      <span className="text-[10px] font-mono text-destructive">-{dropoff.toFixed(0)}% drop-off</span>
+                      <span className="font-mono text-[10px] text-destructive">-{dropoff.toFixed(0)}% drop-off</span>
                     </div>
                   )}
                   {i < funnelData.length - 1 && dropoff === 0 && <div className="py-1" />}
                 </div>
               );
             })}
-          </div>
+            </div>
 
-          {/* Conversion rates between stages */}
-          <div className="space-y-3">
-            <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Taxas entre etapas</h4>
+            <div className="space-y-3">
+              <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Taxas entre etapas</h4>
             {[
               { from: "Prospectados", to: "Contatados", rate: data.contactRate, fromVal: data.totalProspected, toVal: data.totalContacted },
               { from: "Contatados", to: "Interessados", rate: data.interestRate, fromVal: data.totalContacted, toVal: data.totalInterested },
               { from: "Interessados", to: "Convertidos", rate: data.closeRate, fromVal: data.totalInterested, toVal: data.totalConverted },
             ].map((stage) => (
-              <div key={stage.from} className="glass-card p-3 space-y-2">
+                <div key={stage.from} className="rounded-lg border border-border/80 bg-background/70 p-3 space-y-2">
                 <div className="flex items-center justify-between text-xs">
-                  <span className="text-muted-foreground">{stage.from} → {stage.to}</span>
-                  <span className={`font-mono font-bold text-sm ${
+                    <span className="text-muted-foreground">{stage.from} {"->"} {stage.to}</span>
+                    <span className={`font-mono font-bold text-sm ${
                     stage.rate > 50 ? "text-primary" : stage.rate > 20 ? "text-warning" : "text-destructive"
                   }`}>
                     {formatPercent(stage.rate)}
@@ -362,31 +436,29 @@ export default function Dashboard() {
                   />
                 </div>
                 <div className="flex justify-between text-[10px] text-muted-foreground/70">
-                  <span>{stage.fromVal} entradas</span>
-                  <span>{stage.toVal} saídas</span>
+                    <span>{stage.fromVal} entradas</span>
+                    <span>{stage.toVal} saidas</span>
                 </div>
               </div>
             ))}
-            <div className="glass-card p-3 border-primary/20 bg-primary/5">
+              <div className="rounded-lg border border-primary/20 bg-primary/10 p-3">
               <div className="flex items-center justify-between text-xs">
-                <span className="text-foreground font-medium">Conversão geral (ponta a ponta)</span>
-                <span className="font-mono font-bold text-lg text-primary">{formatPercent(data.conversionRate)}</span>
+                  <span className="font-medium text-foreground">Conversao geral (ponta a ponta)</span>
+                  <span className="font-mono text-lg font-bold text-primary">{formatPercent(data.conversionRate)}</span>
               </div>
               <p className="text-[10px] text-muted-foreground mt-1">
                 De {data.totalProspected} prospectados, {data.totalConverted} converteram
                 {data.totalConverted > 0 && ` (1 a cada ${Math.ceil(data.totalProspected / data.totalConverted)})`}
               </p>
             </div>
+            </div>
           </div>
         </div>
-      </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* Status distribution pie */}
-        <div className="glass-card p-4 md:p-5">
-          <h3 className="font-display text-sm font-semibold text-foreground mb-4">Distribuição por Status</h3>
-          <div className="flex items-center gap-4">
-            <div className="w-40 h-40 sm:w-48 sm:h-48">
+        <div className="glass-card p-4 md:p-5 border-border/80">
+          <h3 className="font-display mb-4 text-sm font-semibold text-foreground">Distribuicao por Status</h3>
+          <div className="flex flex-col gap-4 xl:flex-row xl:items-center">
+            <div className="h-40 w-full max-w-[230px] self-center">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
@@ -403,23 +475,16 @@ export default function Dashboard() {
                       <Cell key={i} fill={entry.color} />
                     ))}
                   </Pie>
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: "hsl(var(--card))",
-                      border: "1px solid hsl(var(--border))",
-                      borderRadius: "8px",
-                      fontSize: "12px",
-                    }}
-                  />
+                  <Tooltip contentStyle={tooltipStyle} />
                 </PieChart>
               </ResponsiveContainer>
             </div>
-            <div className="flex-1 space-y-2">
+            <div className="flex-1 space-y-2.5">
               {statusDistribution.map((s) => (
-                <div key={s.name} className="flex items-center justify-between text-xs">
-                  <div className="flex items-center gap-2">
+                <div key={s.name} className="flex items-center justify-between rounded-md border border-border/70 bg-background/60 px-2.5 py-2 text-xs">
+                  <div className="flex min-w-0 items-center gap-2">
                     <div className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: s.color }} />
-                    <span className="text-muted-foreground">{s.name}</span>
+                    <span className="truncate text-muted-foreground">{s.name}</span>
                   </div>
                   <span className="font-mono text-foreground font-medium">{s.value}</span>
                 </div>
@@ -428,8 +493,7 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Revenue by stage */}
-        <div className="glass-card p-4 md:p-5">
+        <div className="glass-card p-4 md:p-5 border-border/80">
           <h3 className="font-display text-sm font-semibold text-foreground mb-4">Receita por Etapa</h3>
           <ResponsiveContainer width="100%" height={200}>
             <BarChart data={[
@@ -440,15 +504,7 @@ export default function Dashboard() {
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
               <XAxis dataKey="name" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
               <YAxis tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} tickFormatter={(v) => `R$${(v/1000).toFixed(0)}k`} />
-              <Tooltip
-                formatter={(value: number) => [formatCurrency(value), "Valor"]}
-                contentStyle={{
-                  backgroundColor: "hsl(var(--card))",
-                  border: "1px solid hsl(var(--border))",
-                  borderRadius: "8px",
-                  fontSize: "12px",
-                }}
-              />
+              <Tooltip formatter={(value: number) => [formatCurrency(value), "Valor"]} contentStyle={tooltipStyle} />
               <Bar dataKey="value" radius={[6, 6, 0, 0]}>
                 {[COLORS.info, COLORS.success, COLORS.destructive].map((c, i) => (
                   <Cell key={i} fill={c} />
@@ -457,11 +513,10 @@ export default function Dashboard() {
             </BarChart>
           </ResponsiveContainer>
         </div>
-      </div>
+      </section>
 
-      {/* Monthly evolution chart */}
       {timelineData.length > 0 && (
-        <div className="glass-card p-4 md:p-5">
+        <div className="glass-card p-4 md:p-5 border-border/80">
           <h3 className="font-display text-sm font-semibold text-foreground mb-1">Evolução Mensal</h3>
           <p className="text-[11px] text-muted-foreground mb-4">Prospecções, conversões e receita ao longo do tempo</p>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -482,14 +537,7 @@ export default function Dashboard() {
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                   <XAxis dataKey="month" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} />
                   <YAxis tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: "hsl(var(--card))",
-                      border: "1px solid hsl(var(--border))",
-                      borderRadius: "8px",
-                      fontSize: "12px",
-                    }}
-                  />
+                  <Tooltip contentStyle={tooltipStyle} />
                   <Area type="monotone" dataKey="prospectados" name="Prospectados" stroke={COLORS.info} fill="url(#gradProspect)" strokeWidth={2} />
                   <Area type="monotone" dataKey="convertidos" name="Convertidos" stroke={COLORS.success} fill="url(#gradConvert)" strokeWidth={2} />
                   <Area type="monotone" dataKey="perdidos" name="Perdidos" stroke={COLORS.destructive} fill={COLORS.destructive} fillOpacity={0.1} strokeWidth={2} />
@@ -503,15 +551,7 @@ export default function Dashboard() {
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                   <XAxis dataKey="month" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} />
                   <YAxis tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} tickFormatter={(v) => `R$${(v / 1000).toFixed(0)}k`} />
-                  <Tooltip
-                    formatter={(value: number) => [formatCurrency(value), "Receita"]}
-                    contentStyle={{
-                      backgroundColor: "hsl(var(--card))",
-                      border: "1px solid hsl(var(--border))",
-                      borderRadius: "8px",
-                      fontSize: "12px",
-                    }}
-                  />
+                  <Tooltip formatter={(value: number) => [formatCurrency(value), "Receita"]} contentStyle={tooltipStyle} />
                   <Bar dataKey="receita" name="Receita" fill={COLORS.success} radius={[6, 6, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
@@ -520,32 +560,31 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Data quality / enrichment stats */}
-      <div className="glass-card p-4 md:p-5">
+      <div className="glass-card p-4 md:p-5 border-border/80">
         <h3 className="font-display text-sm font-semibold text-foreground mb-4">Qualidade dos Dados Prospectados</h3>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-          <QualityBar
+          <QualityRow
             label="Total Prospectado"
             value={data.totalProspected}
             total={data.totalProspected}
             icon={<Users className="h-3.5 w-3.5" />}
             color={COLORS.info}
           />
-          <QualityBar
+          <QualityRow
             label="Com Telefone"
             value={data.totalWithPhone}
             total={data.totalProspected}
             icon={<Phone className="h-3.5 w-3.5" />}
             color={COLORS.warning}
           />
-          <QualityBar
+          <QualityRow
             label="Com Website"
             value={data.totalWithWebsite}
             total={data.totalProspected}
-            icon={<Mail className="h-3.5 w-3.5" />}
+            icon={<Globe className="h-3.5 w-3.5" />}
             color={COLORS.primary}
           />
-          <QualityBar
+          <QualityRow
             label="Com E-mail"
             value={data.totalWithEmail}
             total={data.totalProspected}
@@ -555,10 +594,14 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Bottom insights */}
-      <div className="glass-card p-4 md:p-5">
-        <h3 className="font-display text-sm font-semibold text-foreground mb-3">Insights</h3>
-        <div className="space-y-2">
+      <div className="glass-card p-4 md:p-5 border-border/80">
+        <div className="mb-3 flex items-center justify-between gap-2">
+          <h3 className="font-display text-sm font-semibold text-foreground">Insights Operacionais</h3>
+          <span className="rounded border border-border/80 bg-background/70 px-2 py-1 text-[10px] uppercase tracking-wider text-muted-foreground">
+            Acionaveis
+          </span>
+        </div>
+        <div className="space-y-2.5">
           {data.totalProspected > 0 && data.totalConverted === 0 && (
             <InsightItem type="warning" text="Você ainda não converteu nenhum lead. Foque em entrar em contato com os leads interessados." />
           )}
@@ -580,7 +623,7 @@ export default function Dashboard() {
           {data.totalProspected > 0 && (
             <InsightItem
               type="info"
-              text={`Para cada contrato fechado, você precisa prospectar em média ${data.totalConverted > 0 ? Math.ceil(data.totalProspected / data.totalConverted) : "∞"} empresas.`}
+              text={`Para cada contrato fechado, você precisa prospectar em média ${conversionPerContract ?? "∞"} empresas.`}
             />
           )}
         </div>
@@ -589,32 +632,64 @@ export default function Dashboard() {
   );
 }
 
-function MetricCard({ icon, label, value, sub, iconColor, iconBg }: {
-  icon: React.ReactNode; label: string; value: string; sub: string;
-  iconColor: string; iconBg: string;
-}) {
+const tooltipStyle = {
+  backgroundColor: "hsl(var(--card))",
+  border: "1px solid hsl(var(--border))",
+  borderRadius: "8px",
+  fontSize: "12px",
+};
+
+function HeaderKpi({ label, value, highlight }: { label: string; value: string; highlight?: boolean }) {
   return (
-    <div className="glass-card p-4 flex items-center gap-3">
-      <div className={`flex h-10 w-10 items-center justify-center rounded-lg ${iconBg}`}>
-        <span className={iconColor}>{icon}</span>
-      </div>
-      <div className="min-w-0">
-        <div className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</div>
-        <div className="font-display text-lg font-bold text-foreground truncate">{value}</div>
-        <div className="text-[10px] text-muted-foreground">{sub}</div>
+    <div className={`rounded-lg border px-2.5 py-2 ${highlight ? "border-primary/25 bg-primary/10" : "border-border/80 bg-background/70"}`}>
+      <div className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</div>
+      <div className={`mt-0.5 font-mono text-sm font-semibold ${highlight ? "text-primary" : "text-foreground"}`}>{value}</div>
+    </div>
+  );
+}
+
+function ExecutiveMetricCard({ icon, label, value, sub, tone }: {
+  icon: ReactNode;
+  label: string;
+  value: string;
+  sub: string;
+  tone: "primary" | "info" | "warning" | "destructive";
+}) {
+  const tones = {
+    primary: { bg: "bg-primary/10", color: "text-primary", line: "before:bg-primary" },
+    info: { bg: "bg-info/10", color: "text-info", line: "before:bg-info" },
+    warning: { bg: "bg-warning/10", color: "text-warning", line: "before:bg-warning" },
+    destructive: { bg: "bg-destructive/10", color: "text-destructive", line: "before:bg-destructive" },
+  };
+
+  return (
+    <div className={`glass-card relative overflow-hidden p-4 before:absolute before:left-0 before:top-0 before:h-full before:w-1 ${tones[tone].line}`}>
+      <div className="flex items-center gap-3">
+        <div className={`flex h-10 w-10 items-center justify-center rounded-md ${tones[tone].bg}`}>
+          <span className={tones[tone].color}>{icon}</span>
+        </div>
+        <div className="min-w-0">
+          <div className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</div>
+          <div className="font-display text-lg font-bold tracking-tight text-foreground truncate">{value}</div>
+          <div className="text-[10px] text-muted-foreground">{sub}</div>
+        </div>
       </div>
     </div>
   );
 }
 
-function RateCard({ label, value, icon, description, negative }: {
-  label: string; value: number; icon: React.ReactNode; description: string; negative?: boolean;
+function CompactRateCard({ label, value, icon, description, negative }: {
+  label: string;
+  value: number;
+  icon: ReactNode;
+  description: string;
+  negative?: boolean;
 }) {
   const isGood = negative ? value < 20 : value > 30;
   const isBad = negative ? value > 40 : value < 10;
 
   return (
-    <div className="glass-card p-3 text-center space-y-1.5">
+    <div className="rounded-lg border border-border/80 bg-background/70 p-3 text-center space-y-1.5">
       <div className="flex items-center justify-center gap-1 text-muted-foreground">
         {icon}
         <span className="text-[10px] uppercase tracking-wider">{label}</span>
@@ -629,12 +704,16 @@ function RateCard({ label, value, icon, description, negative }: {
   );
 }
 
-function QualityBar({ label, value, total, icon, color }: {
-  label: string; value: number; total: number; icon: React.ReactNode; color: string;
+function QualityRow({ label, value, total, icon, color }: {
+  label: string;
+  value: number;
+  total: number;
+  icon: ReactNode;
+  color: string;
 }) {
   const pct = total > 0 ? (value / total) * 100 : 0;
   return (
-    <div className="space-y-1.5">
+    <div className="space-y-1.5 rounded-md border border-border/70 bg-background/60 p-2.5">
       <div className="flex items-center justify-between text-xs">
         <div className="flex items-center gap-1 text-muted-foreground">{icon} {label}</div>
         <span className="font-mono text-foreground">{value}</span>
@@ -649,14 +728,14 @@ function QualityBar({ label, value, total, icon, color }: {
 
 function InsightItem({ type, text }: { type: "success" | "warning" | "danger" | "info"; text: string }) {
   const styles = {
-    success: "border-l-primary bg-primary/5",
-    warning: "border-l-warning bg-warning/5",
-    danger: "border-l-destructive bg-destructive/5",
-    info: "border-l-info bg-info/5",
+    success: "border-l-primary bg-primary/5 border border-primary/10",
+    warning: "border-l-warning bg-warning/5 border border-warning/10",
+    danger: "border-l-destructive bg-destructive/5 border border-destructive/10",
+    info: "border-l-info bg-info/5 border border-info/10",
   };
   const icons = {
     success: <CheckCircle2 className="h-3.5 w-3.5 text-primary shrink-0" />,
-    warning: <ArrowUpRight className="h-3.5 w-3.5 text-warning shrink-0" />,
+    warning: <Zap className="h-3.5 w-3.5 text-warning shrink-0" />,
     danger: <XCircle className="h-3.5 w-3.5 text-destructive shrink-0" />,
     info: <TrendingUp className="h-3.5 w-3.5 text-info shrink-0" />,
   };

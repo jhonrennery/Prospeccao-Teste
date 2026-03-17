@@ -1,41 +1,26 @@
 services:
-  app:
+  zap2:
     build:
       context: .
       dockerfile: Dockerfile
-      args:
-        VITE_SUPABASE_URL: ${VITE_SUPABASE_URL}
-        VITE_SUPABASE_PUBLISHABLE_KEY: ${VITE_SUPABASE_PUBLISHABLE_KEY}
+    container_name: zap2-local
     ports:
-      - "8080:80"
-    restart: unless-stopped
-    depends_on:
-      zap2:
-        condition: service_started
-
-  zap2:
-    build:
-      context: ./integrations/zap2
-      dockerfile: Dockerfile
+      - "${PORT:-3000}:3000"
     environment:
       PORT: 3000
-      HOSTNAME: 0.0.0.0
+      HOST: 0.0.0.0
       NODE_ENV: production
-      NEXT_TELEMETRY_DISABLED: 1
-      NEXT_PUBLIC_BASE_PATH: /zap2
-      DATABASE_URL: postgresql://zap2:zap2@zap2-postgres:5432/zap2
-    ports:
-      - "3010:3000"
+      DATABASE_URL: postgresql://zap2:zap2@postgres:5432/zap2
     volumes:
       - zap2_auth:/app/.auth
       - zap2_media:/app/storage
     depends_on:
-      zap2-postgres:
+      postgres:
         condition: service_healthy
     restart: unless-stopped
-
-  zap2-postgres:
+  postgres:
     image: postgres:16-alpine
+    container_name: zap2-postgres
     environment:
       POSTGRES_DB: zap2
       POSTGRES_USER: zap2
@@ -50,5 +35,5 @@ services:
 
 volumes:
   zap2_auth:
-  zap2_media:
   zap2_postgres:
+  zap2_media:

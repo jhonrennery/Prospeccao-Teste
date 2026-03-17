@@ -2,7 +2,9 @@ import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { DragDropContext, Droppable, Draggable, type DropResult } from "@hello-pangea/dnd";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Link } from "react-router-dom";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel,
   AlertDialogContent, AlertDialogDescription, AlertDialogFooter,
@@ -10,9 +12,10 @@ import {
 } from "@/components/ui/alert-dialog";
 import {
   Phone, Globe, MapPin, Star, Mail, GripVertical,
-  Kanban as KanbanIcon, DollarSign, TrendingUp,
+  Kanban as KanbanIcon, DollarSign, TrendingUp, MessageCircle,
 } from "lucide-react";
 import { toast } from "sonner";
+import { buildWhatsAppChatLink } from "@/modules/whatsapp/chat-link";
 
 interface KanbanItem {
   id: string;
@@ -267,127 +270,145 @@ export default function KanbanPage() {
                         snapshot.isDraggingOver ? "bg-primary/5 border-primary/30" : "bg-card/30"
                       }`}
                     >
-                      {colItems.map((item, index) => (
-                        <Draggable key={item.id} draggableId={item.id} index={index}>
-                          {(provided, snapshot) => (
-                            <div
-                              ref={provided.innerRef}
-                              {...provided.draggableProps}
-                              className={`glass-card p-3 rounded-md transition-shadow ${
-                                snapshot.isDragging ? "shadow-lg shadow-primary/10 ring-1 ring-primary/30" : ""
-                              }`}
-                            >
-                              <div className="flex items-start gap-2">
-                                <div
-                                  {...provided.dragHandleProps}
-                                  className="mt-0.5 text-muted-foreground/50 hover:text-muted-foreground cursor-grab active:cursor-grabbing"
-                                >
-                                  <GripVertical className="h-4 w-4" />
-                                </div>
-                                <div className="flex-1 min-w-0">
+                      {colItems.map((item, index) => {
+                        const whatsappHref = buildWhatsAppChatLink({
+                          phone: item.place.phone,
+                          contactName: item.place.name,
+                        });
+
+                        return (
+                          <Draggable key={item.id} draggableId={item.id} index={index}>
+                            {(provided, snapshot) => (
+                              <div
+                                ref={provided.innerRef}
+                                {...provided.draggableProps}
+                                className={`glass-card p-3 rounded-md transition-shadow ${
+                                  snapshot.isDragging ? "shadow-lg shadow-primary/10 ring-1 ring-primary/30" : ""
+                                }`}
+                              >
+                                <div className="flex items-start gap-2">
                                   <div
-                                    className={`font-medium text-sm truncate ${
-                                      item.place.google_maps_url
-                                        ? "text-foreground hover:text-primary cursor-pointer transition-colors"
-                                        : "text-foreground"
-                                    }`}
-                                    onClick={() => {
-                                      if (item.place.google_maps_url) {
-                                        setMapsDialog({ name: item.place.name, url: item.place.google_maps_url });
-                                      }
-                                    }}
+                                    {...provided.dragHandleProps}
+                                    className="mt-0.5 text-muted-foreground/50 hover:text-muted-foreground cursor-grab active:cursor-grabbing"
                                   >
-                                    {item.place.name}
+                                    <GripVertical className="h-4 w-4" />
                                   </div>
-                                  {item.place.category && (
-                                    <Badge variant="secondary" className="text-[10px] mt-1">
-                                      {item.place.category}
-                                    </Badge>
-                                  )}
-                                  <div className="mt-2 space-y-1">
-                                    {item.place.address && (
-                                      <div className="flex items-center gap-1 text-[11px] text-muted-foreground">
-                                        <MapPin className="h-3 w-3 shrink-0" />
-                                        <span className="truncate">{item.place.address}</span>
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-start gap-2">
+                                      <div className="min-w-0 flex-1">
+                                        <div
+                                          className={`font-medium text-sm truncate ${
+                                            item.place.google_maps_url
+                                              ? "text-foreground hover:text-primary cursor-pointer transition-colors"
+                                              : "text-foreground"
+                                          }`}
+                                          onClick={() => {
+                                            if (item.place.google_maps_url) {
+                                              setMapsDialog({ name: item.place.name, url: item.place.google_maps_url });
+                                            }
+                                          }}
+                                        >
+                                          {item.place.name}
+                                        </div>
+                                        {item.place.category && (
+                                          <Badge variant="secondary" className="text-[10px] mt-1">
+                                            {item.place.category}
+                                          </Badge>
+                                        )}
                                       </div>
-                                    )}
-                                    {item.place.phone && (
-                                      <div className="flex items-center gap-1 text-[11px] text-muted-foreground">
-                                        <Phone className="h-3 w-3 shrink-0" />
-                                        {item.place.phone}
-                                      </div>
-                                    )}
-                                    {item.place.website && (
-                                      <div className="flex items-center gap-1 text-[11px] text-muted-foreground">
-                                        <Globe className="h-3 w-3 shrink-0" />
-                                        <span className="truncate">
-                                          {item.place.website.replace(/https?:\/\/(www\.)?/, "")}
+                                      {whatsappHref ? (
+                                        <Button asChild variant="outline" size="icon" className="h-7 w-7 shrink-0">
+                                          <Link to={whatsappHref} aria-label={`Abrir conversa com ${item.place.name}`}>
+                                            <MessageCircle className="h-3.5 w-3.5" />
+                                          </Link>
+                                        </Button>
+                                      ) : null}
+                                    </div>
+                                    <div className="mt-2 space-y-1">
+                                      {item.place.address && (
+                                        <div className="flex items-center gap-1 text-[11px] text-muted-foreground">
+                                          <MapPin className="h-3 w-3 shrink-0" />
+                                          <span className="truncate">{item.place.address}</span>
+                                        </div>
+                                      )}
+                                      {item.place.phone && (
+                                        <div className="flex items-center gap-1 text-[11px] text-muted-foreground">
+                                          <Phone className="h-3 w-3 shrink-0" />
+                                          {item.place.phone}
+                                        </div>
+                                      )}
+                                      {item.place.website && (
+                                        <div className="flex items-center gap-1 text-[11px] text-muted-foreground">
+                                          <Globe className="h-3 w-3 shrink-0" />
+                                          <span className="truncate">
+                                            {item.place.website.replace(/https?:\/\/(www\.)?/, "")}
+                                          </span>
+                                        </div>
+                                      )}
+                                      {item.email && (
+                                        <div className="flex items-center gap-1 text-[11px] text-primary">
+                                          <Mail className="h-3 w-3 shrink-0" />
+                                          <span className="truncate">{item.email}</span>
+                                        </div>
+                                      )}
+                                    </div>
+                                    {item.place.rating != null && (
+                                      <div className="flex items-center gap-1 mt-2">
+                                        <Star className="h-3 w-3 text-warning fill-warning" />
+                                        <span className="text-[11px] font-mono text-muted-foreground">
+                                          {item.place.rating}
                                         </span>
                                       </div>
                                     )}
-                                    {item.email && (
-                                      <div className="flex items-center gap-1 text-[11px] text-primary">
-                                        <Mail className="h-3 w-3 shrink-0" />
-                                        <span className="truncate">{item.email}</span>
-                                      </div>
-                                    )}
-                                  </div>
-                                  {item.place.rating != null && (
-                                    <div className="flex items-center gap-1 mt-2">
-                                      <Star className="h-3 w-3 text-warning fill-warning" />
-                                      <span className="text-[11px] font-mono text-muted-foreground">
-                                        {item.place.rating}
-                                      </span>
-                                    </div>
-                                  )}
 
-                                  {/* Value input */}
-                                  <div className="mt-2 pt-2 border-t border-border/40">
-                                    {editingValueId === item.id ? (
-                                      <div className="flex items-center gap-1">
-                                        <DollarSign className="h-3 w-3 text-primary shrink-0" />
-                                        <Input
-                                          autoFocus
-                                          type="text"
-                                          value={editValue}
-                                          onChange={(e) => setEditValue(e.target.value)}
-                                          onBlur={() => handleSaveValue(item)}
-                                          onKeyDown={(e) => {
-                                            if (e.key === "Enter") handleSaveValue(item);
-                                            if (e.key === "Escape") setEditingValueId(null);
+                                    {/* Value input */}
+                                    <div className="mt-2 pt-2 border-t border-border/40">
+                                      {editingValueId === item.id ? (
+                                        <div className="flex items-center gap-1">
+                                          <DollarSign className="h-3 w-3 text-primary shrink-0" />
+                                          <Input
+                                            autoFocus
+                                            type="text"
+                                            value={editValue}
+                                            onChange={(e) => setEditValue(e.target.value)}
+                                            onBlur={() => handleSaveValue(item)}
+                                            onKeyDown={(e) => {
+                                              if (e.key === "Enter") handleSaveValue(item);
+                                              if (e.key === "Escape") setEditingValueId(null);
+                                            }}
+                                            className="h-6 text-xs bg-secondary border-border px-2 py-0"
+                                            placeholder="0,00"
+                                          />
+                                        </div>
+                                      ) : (
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            setEditingValueId(item.id);
+                                            setEditValue(item.estimatedValue > 0 ? item.estimatedValue.toString() : "");
                                           }}
-                                          className="h-6 text-xs bg-secondary border-border px-2 py-0"
-                                          placeholder="0,00"
-                                        />
-                                      </div>
-                                    ) : (
-                                      <button
-                                        type="button"
-                                        onClick={() => {
-                                          setEditingValueId(item.id);
-                                          setEditValue(item.estimatedValue > 0 ? item.estimatedValue.toString() : "");
-                                        }}
-                                        className="flex items-center gap-1 text-[11px] hover:text-primary transition-colors w-full group"
-                                      >
-                                        <DollarSign className="h-3 w-3 text-primary shrink-0" />
-                                        {item.estimatedValue > 0 ? (
-                                          <span className="font-mono font-semibold text-primary">
-                                            {formatCurrency(item.estimatedValue)}
-                                          </span>
-                                        ) : (
-                                          <span className="text-muted-foreground/50 group-hover:text-muted-foreground">
-                                            Definir valor
-                                          </span>
-                                        )}
-                                      </button>
-                                    )}
+                                          className="flex items-center gap-1 text-[11px] hover:text-primary transition-colors w-full group"
+                                        >
+                                          <DollarSign className="h-3 w-3 text-primary shrink-0" />
+                                          {item.estimatedValue > 0 ? (
+                                            <span className="font-mono font-semibold text-primary">
+                                              {formatCurrency(item.estimatedValue)}
+                                            </span>
+                                          ) : (
+                                            <span className="text-muted-foreground/50 group-hover:text-muted-foreground">
+                                              Definir valor
+                                            </span>
+                                          )}
+                                        </button>
+                                      )}
+                                    </div>
                                   </div>
                                 </div>
                               </div>
-                            </div>
-                          )}
-                        </Draggable>
-                      ))}
+                            )}
+                          </Draggable>
+                        );
+                      })}
                       {provided.placeholder}
                       {colItems.length === 0 && (
                         <div className="text-center text-xs text-muted-foreground/50 py-8">

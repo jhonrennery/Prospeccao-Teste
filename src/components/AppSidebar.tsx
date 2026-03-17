@@ -1,4 +1,4 @@
-import { Search, Users, Download, BarChart3, Settings, Zap, Kanban, LayoutDashboard, MessageSquareMore } from "lucide-react";
+import { Search, Users, Download, BarChart3, Settings, Zap, Kanban, LayoutDashboard, MessageSquareMore, LogOut } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 
@@ -12,11 +12,21 @@ const navItems = [
   { icon: Download, label: "Exportar", path: "/export" },
 ];
 
-export function AppSidebar() {
+interface AppSidebarProps {
+  onLogout: () => void | Promise<void>;
+}
+
+export function AppSidebar({ onLogout }: AppSidebarProps) {
   const location = useLocation();
+  const isWhatsAppRoute = location.pathname === "/whatsapp";
 
   return (
-    <aside className="fixed left-0 top-0 z-40 flex h-screen w-14 flex-col items-center border-r border-border bg-sidebar py-4 md:w-16 md:py-6 lg:w-56">
+    <aside
+      className={cn(
+        "fixed left-0 top-0 z-40 flex h-screen w-14 flex-col items-center border-r border-border bg-sidebar py-4 md:w-16 md:py-6 lg:w-56",
+        isWhatsAppRoute && "bg-sidebar/95 backdrop-blur-sm",
+      )}
+    >
       <div className="mb-8 flex items-center gap-2 px-4">
         <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary">
           <Zap className="h-4 w-4 text-primary-foreground" />
@@ -47,7 +57,7 @@ export function AppSidebar() {
         })}
       </nav>
 
-      <div className="px-2 w-full">
+      <div className="flex w-full flex-col gap-2 px-2">
         <NavLink
           to="/settings"
           className={cn(
@@ -60,6 +70,15 @@ export function AppSidebar() {
           <Settings className="h-4 w-4 shrink-0" />
           <span className="hidden lg:block">Config</span>
         </NavLink>
+
+        <button
+          type="button"
+          onClick={() => void onLogout()}
+          className="flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+        >
+          <LogOut className="h-4 w-4 shrink-0" />
+          <span className="hidden lg:block">Sair</span>
+        </button>
       </div>
     </aside>
   );

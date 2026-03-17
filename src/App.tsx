@@ -2,14 +2,13 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { restoreSession } from "@/lib/auth-session";
 import { AppSidebar } from "@/components/AppSidebar";
 import { AuthForm } from "@/components/AuthForm";
-import { Button } from "@/components/ui/button";
-import { LogOut } from "lucide-react";
 import Index from "./pages/Index";
 import Leads from "./pages/Leads";
 import Searches from "./pages/Searches";
@@ -24,9 +23,11 @@ import type { Session } from "@supabase/supabase-js";
 const queryClient = new QueryClient();
 
 function AuthenticatedLayout() {
+  const location = useLocation();
   const handleLogout = async () => {
     await supabase.auth.signOut();
   };
+  const isWhatsAppRoute = location.pathname === "/whatsapp";
 
   const showWatermark = (() => {
     try {
@@ -38,13 +39,14 @@ function AuthenticatedLayout() {
 
   return (
     <div className={`prospecting-background flex min-h-screen bg-background/70 ${showWatermark ? "watermark-overlay" : ""}`}>
-      <AppSidebar />
-      <main className="flex-1 ml-14 md:ml-16 lg:ml-56 p-4 md:p-6 lg:p-8 xl:px-12 2xl:px-16 backdrop-blur-[1px]">
-        <div className="flex justify-end mb-4">
-          <Button variant="ghost" size="sm" onClick={handleLogout} className="text-muted-foreground">
-            <LogOut className="h-4 w-4 mr-1" /> Sair
-          </Button>
-        </div>
+      <AppSidebar onLogout={handleLogout} />
+      <main
+        className={
+          isWhatsAppRoute
+            ? "ml-14 min-w-0 flex-1 h-screen overflow-hidden md:ml-16 lg:ml-56"
+            : "ml-14 min-w-0 flex-1 p-4 backdrop-blur-[1px] md:ml-16 md:p-6 lg:ml-56 lg:p-8 xl:px-12 2xl:px-16"
+        }
+      >
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/leads" element={<Leads />} />
@@ -66,16 +68,36 @@ const App = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    let isMounted = true;
+
+    const initializeSession = async () => {
+      const restored = await restoreSession();
+
+      if (!isMounted) return;
+
+      setSession(restored.session);
+      setLoading(false);
+
+      if (restored.recoveredFromInvalidStorage) {
+        toast.error("Sua sessão expirou. Faça login novamente.");
+      } else if (restored.error) {
+        console.error("Failed to restore Supabase session", restored.error);
+        toast.error("Não foi possível restaurar sua sessão.");
+      }
+    };
+
+    initializeSession();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!isMounted) return;
       setSession(session);
       setLoading(false);
     });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-    });
-
-    return () => subscription.unsubscribe();
+    return () => {
+      isMounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   // Read protection settings

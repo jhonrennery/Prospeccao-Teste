@@ -2,8 +2,9 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
+import { Link } from "react-router-dom";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel,
   AlertDialogContent, AlertDialogDescription, AlertDialogFooter,
@@ -11,9 +12,10 @@ import {
 } from "@/components/ui/alert-dialog";
 import {
   Users, Phone, Globe, MapPin, Star, Trash2,
-  Search, ExternalLink, Mail, Instagram,
+  Search, ExternalLink, Mail, Instagram, MessageCircle,
 } from "lucide-react";
 import { toast } from "sonner";
+import { buildWhatsAppChatLink } from "@/modules/whatsapp/chat-link";
 
 interface Lead {
   id: string;
@@ -185,6 +187,11 @@ export default function Leads() {
         <div className="grid gap-3">
           {filtered.map((lead) => {
             const statusInfo = statusOptions.find((s) => s.value === lead.status);
+            const whatsappHref = buildWhatsAppChatLink({
+              phone: lead.place.phone,
+              contactName: lead.place.name,
+            });
+
             return (
               <div
                 key={lead.id}
@@ -306,6 +313,14 @@ export default function Leads() {
                         ))}
                       </SelectContent>
                     </Select>
+                    {whatsappHref ? (
+                      <Button asChild variant="outline" size="sm" className="h-7 gap-1.5 px-2 text-[11px]">
+                        <Link to={whatsappHref}>
+                          <MessageCircle className="h-3.5 w-3.5" />
+                          WhatsApp
+                        </Link>
+                      </Button>
+                    ) : null}
                     <Button
                       variant="ghost"
                       size="sm"
