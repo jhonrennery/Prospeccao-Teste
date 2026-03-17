@@ -8,12 +8,12 @@ const formatTimestamp = (value) => {
 };
 
 const statusConfig = {
-  idle:        { label: 'Inicializando',       dot: 'dot-idle' },
-  connecting:  { label: 'Conectando...',        dot: 'dot-connecting' },
-  qr_ready:    { label: 'Aguardando leitura',   dot: 'dot-qr' },
-  reconnecting:{ label: 'Reconectando...',      dot: 'dot-connecting' },
-  logged_out:  { label: 'Sessao encerrada',     dot: 'dot-idle' },
-  error:       { label: 'Falha na conexao',     dot: 'dot-error' },
+  idle:        { label: 'Inicializando',     dot: 'dot-idle',       placeholder: 'Preparando...' },
+  connecting:  { label: 'Conectando...',     dot: 'dot-connecting', placeholder: 'Gerando QR code...' },
+  qr_ready:    { label: 'Aguardando leitura',dot: 'dot-qr',         placeholder: 'Gerando QR code...' },
+  reconnecting:{ label: 'Reconectando...',   dot: 'dot-connecting', placeholder: 'Reconectando...' },
+  logged_out:  { label: 'Sessao encerrada',  dot: 'dot-idle',       placeholder: 'Gerando novo QR code...' },
+  error:       { label: 'Falha na conexao',  dot: 'dot-error',      placeholder: 'Tentando novamente...' },
 };
 
 export function WhatsAppPairing({ snapshot }) {
@@ -83,7 +83,7 @@ export function WhatsAppPairing({ snapshot }) {
           ) : (
             <div className="pair-qr-placeholder">
               <div className="pair-spinner" aria-hidden="true" />
-              <p>{snapshot.detail || 'Gerando QR code...'}</p>
+              <p>{cfg.placeholder}</p>
             </div>
           )}
         </div>
