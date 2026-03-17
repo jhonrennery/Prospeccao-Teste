@@ -5,6 +5,7 @@ primary_region = "gru"
   [build.args]
     VITE_SUPABASE_URL = "https://qxuxgufhqkdofcwyvfgc.supabase.co"
     VITE_SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF4dXhndWZocWtkb2Zjd3l2ZmdjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI3NDkyNDgsImV4cCI6MjA4ODMyNTI0OH0.EPMweRDi_CpROoa55j6YySTvgOe9HLZotgR5ulwFx78"
+    VITE_ZAP2_MODULE_URL = "https://prospectai-crm-zap2.fly.dev/zap2"
 
 [http_service]
   internal_port = 80
