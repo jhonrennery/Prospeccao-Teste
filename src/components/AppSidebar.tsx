@@ -1,4 +1,4 @@
-import { Search, Users, Download, BarChart3, Settings, Zap, Kanban, LayoutDashboard, MessageSquareMore, LogOut } from "lucide-react";
+import { Search, Users, Download, BarChart3, Settings, Target, Kanban, LayoutDashboard, MessageSquareMore, LogOut } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 
@@ -29,7 +29,7 @@ export function AppSidebar({ onLogout }: AppSidebarProps) {
     >
       <div className="mb-8 flex items-center gap-2 px-4">
         <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary">
-          <Zap className="h-4 w-4 text-primary-foreground" />
+          <Target className="h-4 w-4 text-primary-foreground" />
         </div>
         <span className="hidden font-display text-lg font-bold text-foreground lg:block">
           ProspectAI
