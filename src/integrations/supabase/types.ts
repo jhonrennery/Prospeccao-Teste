@@ -254,18 +254,18 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "wa_chat_labels_chat_jid_fkey"
-            columns: ["chat_jid"]
+            foreignKeyName: "wa_chat_labels_chat_fkey"
+            columns: ["chat_jid", "session_key"]
             isOneToOne: false
             referencedRelation: "wa_chats"
-            referencedColumns: ["chat_jid"]
+            referencedColumns: ["chat_jid", "session_key"]
           },
           {
-            foreignKeyName: "wa_chat_labels_label_id_fkey"
-            columns: ["label_id"]
+            foreignKeyName: "wa_chat_labels_label_fkey"
+            columns: ["label_id", "session_key"]
             isOneToOne: false
             referencedRelation: "wa_labels"
-            referencedColumns: ["id"]
+            referencedColumns: ["id", "session_key"]
           },
           {
             foreignKeyName: "wa_chat_labels_session_key_fkey"
@@ -442,6 +442,7 @@ export type Database = {
           message_id: string
           message_pk: number
           mime_type: string | null
+          session_key: string
           storage_path: string
           updated_at: string
         }
@@ -455,6 +456,7 @@ export type Database = {
           message_id: string
           message_pk: number
           mime_type?: string | null
+          session_key?: string
           storage_path: string
           updated_at?: string
         }
@@ -468,16 +470,17 @@ export type Database = {
           message_id?: string
           message_pk?: number
           mime_type?: string | null
+          session_key?: string
           storage_path?: string
           updated_at?: string
         }
         Relationships: [
           {
-            foreignKeyName: "wa_media_chat_jid_fkey"
-            columns: ["chat_jid"]
+            foreignKeyName: "wa_media_chat_fkey"
+            columns: ["chat_jid", "session_key"]
             isOneToOne: false
             referencedRelation: "wa_chats"
-            referencedColumns: ["chat_jid"]
+            referencedColumns: ["chat_jid", "session_key"]
           },
           {
             foreignKeyName: "wa_media_message_pk_fkey"
@@ -545,11 +548,11 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "wa_messages_chat_jid_fkey"
-            columns: ["chat_jid"]
+            foreignKeyName: "wa_messages_chat_fkey"
+            columns: ["chat_jid", "session_key"]
             isOneToOne: false
             referencedRelation: "wa_chats"
-            referencedColumns: ["chat_jid"]
+            referencedColumns: ["chat_jid", "session_key"]
           },
           {
             foreignKeyName: "wa_messages_session_key_fkey"
