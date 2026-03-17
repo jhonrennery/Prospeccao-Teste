@@ -1,4 +1,5 @@
 import { EventEmitter } from 'node:events';
+import { rmSync } from 'node:fs';
 import path from 'node:path';
 
 import makeWASocket, {
@@ -271,14 +272,20 @@ export class WhatsAppGateway {
       if (statusCode === DisconnectReason.loggedOut) {
         this.setState({
           status: 'logged_out',
-          headline: 'Sessao desconectada',
-          detail:
-            'O WhatsApp encerrou o vinculo desta sessao. Reinicie o servidor ou limpe a pasta .auth para gerar um novo pareamento.',
+          headline: 'Sessao encerrada',
+          detail: 'Limpando credenciais e gerando novo QR code...',
           qrCodeDataUrl: null,
           accountLabel: null,
         });
 
         await this.syncSessionState('logged_out');
+
+        // Limpa o estado de autenticação para forçar novo QR code
+        try {
+          rmSync(this.authFolder, { recursive: true, force: true });
+        } catch {}
+
+        this.scheduleReconnect();
         return;
       }
 
