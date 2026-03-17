@@ -230,6 +230,369 @@ export type Database = {
         }
         Relationships: []
       }
+      wa_chat_labels: {
+        Row: {
+          chat_jid: string
+          created_at: string
+          label_id: string
+          session_key: string
+          updated_at: string
+        }
+        Insert: {
+          chat_jid: string
+          created_at?: string
+          label_id: string
+          session_key: string
+          updated_at?: string
+        }
+        Update: {
+          chat_jid?: string
+          created_at?: string
+          label_id?: string
+          session_key?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wa_chat_labels_chat_jid_fkey"
+            columns: ["chat_jid"]
+            isOneToOne: false
+            referencedRelation: "wa_chats"
+            referencedColumns: ["chat_jid"]
+          },
+          {
+            foreignKeyName: "wa_chat_labels_label_id_fkey"
+            columns: ["label_id"]
+            isOneToOne: false
+            referencedRelation: "wa_labels"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wa_chat_labels_session_key_fkey"
+            columns: ["session_key"]
+            isOneToOne: false
+            referencedRelation: "wa_sessions"
+            referencedColumns: ["session_key"]
+          },
+        ]
+      }
+      wa_chats: {
+        Row: {
+          archived: boolean
+          avatar_url: string | null
+          chat_jid: string
+          chat_type: string
+          contact_jid: string | null
+          created_at: string
+          last_message_at: string | null
+          last_message_id: string | null
+          last_message_preview: string | null
+          metadata: Json
+          pinned: boolean
+          session_key: string
+          title: string | null
+          unread_count: number
+          updated_at: string
+        }
+        Insert: {
+          archived?: boolean
+          avatar_url?: string | null
+          chat_jid: string
+          chat_type: string
+          contact_jid?: string | null
+          created_at?: string
+          last_message_at?: string | null
+          last_message_id?: string | null
+          last_message_preview?: string | null
+          metadata?: Json
+          pinned?: boolean
+          session_key: string
+          title?: string | null
+          unread_count?: number
+          updated_at?: string
+        }
+        Update: {
+          archived?: boolean
+          avatar_url?: string | null
+          chat_jid?: string
+          chat_type?: string
+          contact_jid?: string | null
+          created_at?: string
+          last_message_at?: string | null
+          last_message_id?: string | null
+          last_message_preview?: string | null
+          metadata?: Json
+          pinned?: boolean
+          session_key?: string
+          title?: string | null
+          unread_count?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wa_chats_contact_jid_fkey"
+            columns: ["contact_jid"]
+            isOneToOne: false
+            referencedRelation: "wa_contacts"
+            referencedColumns: ["contact_jid"]
+          },
+          {
+            foreignKeyName: "wa_chats_session_key_fkey"
+            columns: ["session_key"]
+            isOneToOne: false
+            referencedRelation: "wa_sessions"
+            referencedColumns: ["session_key"]
+          },
+        ]
+      }
+      wa_contacts: {
+        Row: {
+          contact_jid: string
+          created_at: string
+          display_name: string | null
+          metadata: Json
+          phone_number: string | null
+          profile_photo_fetched_at: string | null
+          profile_photo_url: string | null
+          push_name: string | null
+          updated_at: string
+          verified_name: string | null
+        }
+        Insert: {
+          contact_jid: string
+          created_at?: string
+          display_name?: string | null
+          metadata?: Json
+          phone_number?: string | null
+          profile_photo_fetched_at?: string | null
+          profile_photo_url?: string | null
+          push_name?: string | null
+          updated_at?: string
+          verified_name?: string | null
+        }
+        Update: {
+          contact_jid?: string
+          created_at?: string
+          display_name?: string | null
+          metadata?: Json
+          phone_number?: string | null
+          profile_photo_fetched_at?: string | null
+          profile_photo_url?: string | null
+          push_name?: string | null
+          updated_at?: string
+          verified_name?: string | null
+        }
+        Relationships: []
+      }
+      wa_labels: {
+        Row: {
+          color: number
+          created_at: string
+          deleted: boolean
+          id: string
+          metadata: Json
+          name: string
+          predefined_id: string | null
+          session_key: string
+          source: string
+          updated_at: string
+        }
+        Insert: {
+          color?: number
+          created_at?: string
+          deleted?: boolean
+          id: string
+          metadata?: Json
+          name: string
+          predefined_id?: string | null
+          session_key?: string
+          source?: string
+          updated_at?: string
+        }
+        Update: {
+          color?: number
+          created_at?: string
+          deleted?: boolean
+          id?: string
+          metadata?: Json
+          name?: string
+          predefined_id?: string | null
+          session_key?: string
+          source?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wa_labels_session_key_fkey"
+            columns: ["session_key"]
+            isOneToOne: false
+            referencedRelation: "wa_sessions"
+            referencedColumns: ["session_key"]
+          },
+        ]
+      }
+      wa_media: {
+        Row: {
+          chat_jid: string
+          created_at: string
+          duration_seconds: number | null
+          file_size_bytes: number | null
+          id: number
+          media_kind: string
+          message_id: string
+          message_pk: number
+          mime_type: string | null
+          storage_path: string
+          updated_at: string
+        }
+        Insert: {
+          chat_jid: string
+          created_at?: string
+          duration_seconds?: number | null
+          file_size_bytes?: number | null
+          id?: number
+          media_kind: string
+          message_id: string
+          message_pk: number
+          mime_type?: string | null
+          storage_path: string
+          updated_at?: string
+        }
+        Update: {
+          chat_jid?: string
+          created_at?: string
+          duration_seconds?: number | null
+          file_size_bytes?: number | null
+          id?: number
+          media_kind?: string
+          message_id?: string
+          message_pk?: number
+          mime_type?: string | null
+          storage_path?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wa_media_chat_jid_fkey"
+            columns: ["chat_jid"]
+            isOneToOne: false
+            referencedRelation: "wa_chats"
+            referencedColumns: ["chat_jid"]
+          },
+          {
+            foreignKeyName: "wa_media_message_pk_fkey"
+            columns: ["message_pk"]
+            isOneToOne: true
+            referencedRelation: "wa_messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      wa_messages: {
+        Row: {
+          chat_jid: string
+          created_at: string
+          from_me: boolean
+          id: number
+          message_id: string
+          message_type: string | null
+          participant_jid: string | null
+          quoted_message_id: string | null
+          raw_payload: Json
+          recipient_jid: string | null
+          sender_jid: string | null
+          sent_at: string
+          session_key: string
+          status: string
+          text_body: string | null
+          updated_at: string
+        }
+        Insert: {
+          chat_jid: string
+          created_at?: string
+          from_me?: boolean
+          id?: number
+          message_id: string
+          message_type?: string | null
+          participant_jid?: string | null
+          quoted_message_id?: string | null
+          raw_payload?: Json
+          recipient_jid?: string | null
+          sender_jid?: string | null
+          sent_at: string
+          session_key: string
+          status?: string
+          text_body?: string | null
+          updated_at?: string
+        }
+        Update: {
+          chat_jid?: string
+          created_at?: string
+          from_me?: boolean
+          id?: number
+          message_id?: string
+          message_type?: string | null
+          participant_jid?: string | null
+          quoted_message_id?: string | null
+          raw_payload?: Json
+          recipient_jid?: string | null
+          sender_jid?: string | null
+          sent_at?: string
+          session_key?: string
+          status?: string
+          text_body?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wa_messages_chat_jid_fkey"
+            columns: ["chat_jid"]
+            isOneToOne: false
+            referencedRelation: "wa_chats"
+            referencedColumns: ["chat_jid"]
+          },
+          {
+            foreignKeyName: "wa_messages_session_key_fkey"
+            columns: ["session_key"]
+            isOneToOne: false
+            referencedRelation: "wa_sessions"
+            referencedColumns: ["session_key"]
+          },
+        ]
+      }
+      wa_sessions: {
+        Row: {
+          connected_at: string | null
+          created_at: string
+          last_seen_at: string | null
+          metadata: Json
+          phone_number: string | null
+          session_key: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          connected_at?: string | null
+          created_at?: string
+          last_seen_at?: string | null
+          metadata?: Json
+          phone_number?: string | null
+          session_key: string
+          status: string
+          updated_at?: string
+        }
+        Update: {
+          connected_at?: string | null
+          created_at?: string
+          last_seen_at?: string | null
+          metadata?: Json
+          phone_number?: string | null
+          session_key?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       whatsapp_chats: {
         Row: {
           chat_jid: string
