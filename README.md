@@ -1,73 +1,108 @@
-# Welcome to your Lovable project
+# ProspectAI — CRM com WhatsApp
 
-## Project info
+Sistema de CRM focado em prospecção de leads com integração nativa ao WhatsApp.
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+## Stack
 
-## How can I edit this code?
+- **Frontend:** React 18, TypeScript, Vite, Tailwind CSS, shadcn/ui
+- **Backend / Auth / DB:** Supabase (PostgreSQL + RLS + Edge Functions)
+- **WhatsApp Gateway:** [zap2](./integrations/zap2) — Next.js, whatsapp-web.js, PostgreSQL próprio
+- **Infra:** Docker Compose, Nginx (reverse proxy)
 
-There are several ways of editing your application.
+## Funcionalidades
 
-**Use Lovable**
+- Dashboard com métricas de leads e conversões
+- Kanban de oportunidades com drag-and-drop
+- Gestão de leads com busca e filtros
+- Inbox de WhatsApp com histórico de conversas, labels e envio de mensagens
+- Autenticação via Supabase (sessão persistente)
+- Exportação de dados
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+## Estrutura do projeto
 
-Changes made via Lovable will be committed automatically to this repo.
+```
+.
+├── src/
+│   ├── pages/          # Rotas principais (Dashboard, Kanban, Leads, WhatsApp, ...)
+│   ├── components/     # Componentes compartilhados (shadcn/ui + customizados)
+│   ├── modules/        # Módulos de domínio (ex: whatsapp/)
+│   ├── integrations/   # Clientes gerados (Supabase types)
+│   └── lib/            # Utilitários e helpers
+├── integrations/
+│   └── zap2/           # Gateway WhatsApp (Next.js, standalone)
+├── supabase/
+│   ├── migrations/     # Migrations do banco principal
+│   └── manual/         # Scripts SQL aplicados manualmente (ex: tabelas wa_*)
+└── docker-compose.yml  # Orquestração completa (app + zap2 + postgres)
+```
 
-**Use your preferred IDE**
+## Pré-requisitos
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+- Node.js >= 18
+- npm >= 9
+- Docker e Docker Compose (para rodar em produção ou localmente com todos os serviços)
+- Projeto Supabase criado (URL + anon key)
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+## Configuração
 
-Follow these steps:
+Crie um arquivo `.env` na raiz com as seguintes variáveis:
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+```env
+VITE_SUPABASE_URL=https://<seu-projeto>.supabase.co
+VITE_SUPABASE_PUBLISHABLE_KEY=<sua-anon-key>
+```
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+## Rodando localmente
 
-# Step 3: Install the necessary dependencies.
-npm i
+### Só o frontend
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+```bash
+npm install
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+### Frontend + Gateway WhatsApp (zap2)
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+```bash
+# Terminal 1 — frontend
+npm run dev
 
-**Use GitHub Codespaces**
+# Terminal 2 — gateway WhatsApp
+npm run dev:zap2
+```
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+### Tudo via Docker Compose
 
-## What technologies are used for this project?
+```bash
+docker compose up --build
+```
 
-This project is built with:
+Serviços expostos:
+- `http://localhost:8080` — aplicação principal
+- `http://localhost:3010` — gateway zap2 (direto, sem proxy)
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+## Banco de dados
 
-## How can I deploy this project?
+As migrations do Supabase ficam em `supabase/migrations/` e são aplicadas via CLI:
 
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
+```bash
+supabase db push
+```
 
-## Can I connect a custom domain to my Lovable project?
+As tabelas do WhatsApp (`wa_messages`, `wa_chats`, etc.) ficam em `supabase/manual/zap2-adapted/` e devem ser aplicadas manualmente no editor SQL do Supabase, na ordem numérica dos arquivos.
 
-Yes, you can!
+## Testes
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+```bash
+npm test
+```
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+## Deploy
+
+Configure as variáveis de ambiente no servidor e rode:
+
+```bash
+docker compose up -d --build
+```
+
+O Nginx faz o proxy reverso do zap2 na rota `/zap2`.
